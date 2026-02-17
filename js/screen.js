@@ -759,7 +759,33 @@
   }
 
   // ============================================================
-  // Debug: Auth & Connection
+  // Handle Redirect Auth Result (iOS Safari)
+  // ============================================================
+  async function processRedirectResult() {
+    try {
+      const user = await handleRedirectResult();
+      if (user && !user.isAnonymous) {
+        log('Redirect auth success:', user.uid);
+        const userData = avatarMap.get(user.uid);
+        if (userData) {
+          await saveProfile({
+            nickname: userData.data.nickname,
+            color: userData.data.color,
+            role: userData.data.role,
+          });
+        }
+        linkBanner.style.display = 'none';
+        if (commentBar) commentBar.style.display = 'block';
+      }
+    } catch (e) {
+      console.error('Redirect result error:', e);
+    }
+  }
+
+  processRedirectResult();
+
+  // ============================================================
+  // Auth State & Connection
   // ============================================================
   auth.onAuthStateChanged((user) => {
     if (user) {

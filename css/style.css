@@ -35,6 +35,10 @@ body {
   line-height: 1.6;
   min-height: 100vh;
   -webkit-tap-highlight-color: transparent;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 button, input, textarea, select, a {
@@ -51,6 +55,7 @@ button, input, textarea, select, a {
   align-items: flex-start;
   min-height: 100vh;
   padding: 2rem 1rem;
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom));
   position: relative;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -1144,6 +1149,7 @@ button, input, textarea, select, a {
 .screen-nav {
   text-align: center;
   padding: 0.5rem 0;
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
   flex-shrink: 0;
 }
 
@@ -1311,8 +1317,8 @@ button, input, textarea, select, a {
 
 .wifi-fab-wrap {
   position: fixed;
-  bottom: 1.5rem;
-  left: 1.5rem;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  left: calc(1.5rem + env(safe-area-inset-left));
   z-index: 100;
 }
 
@@ -1345,7 +1351,7 @@ button, input, textarea, select, a {
 /* --- Google Account Linking Banner --- */
 .link-banner {
   position: fixed;
-  bottom: 0;
+  bottom: env(safe-area-inset-bottom);
   left: 0;
   right: 0;
   z-index: 120;
@@ -1490,8 +1496,8 @@ button, input, textarea, select, a {
 
 .comment-fab-wrap {
   position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  right: calc(1.5rem + env(safe-area-inset-right));
   z-index: 100;
   display: flex;
   flex-direction: column;

@@ -140,8 +140,17 @@ async function removeUserData(uid) {
 // ============================================================
 
 /**
+ * iOS Safari を検出
+ */
+function isIOSSafari() {
+  const ua = navigator.userAgent;
+  return /iP(hone|od|ad)/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+/**
  * Google アカウントで匿名ユーザーを昇格（Account Linking）
- * @returns {Promise<firebase.User>} リンク後のユーザー
+ * iOS Safari ではポップアップがブロックされるため redirect を使用
+ * @returns {Promise<firebase.User>} リンク後のユーザー (popup時のみ)
  */
 async function linkWithGoogle() {
   const user = auth.currentUser;
@@ -149,14 +158,17 @@ async function linkWithGoogle() {
 
   const provider = new firebase.auth.GoogleAuthProvider();
 
+  if (isIOSSafari()) {
+    await user.linkWithRedirect(provider);
+    return user;
+  }
+
   try {
     const result = await user.linkWithPopup(provider);
     console.log('[firebase-config] Google linked:', result.user.uid);
     return result.user;
   } catch (error) {
-    // すでに別アカウントに紐づけ済みの場合
     if (error.code === 'auth/credential-already-in-use') {
-      // 既存の Google アカウントでサインインし直す
       const result = await auth.signInWithCredential(error.credential);
       console.log('[firebase-config] Signed in with existing Google:', result.user.uid);
       return result.user;
@@ -171,8 +183,35 @@ async function linkWithGoogle() {
  */
 async function signInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
+
+  if (isIOSSafari()) {
+    await auth.signInWithRedirect(provider);
+    return auth.currentUser;
+  }
+
   const result = await auth.signInWithPopup(provider);
   return result.user;
+}
+
+/**
+ * Redirect 認証の結果を処理（ページリロード後に呼ばれる）
+ * @returns {Promise<firebase.User|null>}
+ */
+async function handleRedirectResult() {
+  try {
+    const result = await auth.getRedirectResult();
+    if (result && result.user) {
+      console.log('[firebase-config] Redirect auth completed:', result.user.uid);
+      return result.user;
+    }
+  } catch (error) {
+    if (error.code === 'auth/credential-already-in-use') {
+      const result = await auth.signInWithCredential(error.credential);
+      return result.user;
+    }
+    console.error('[firebase-config] Redirect result error:', error);
+  }
+  return null;
 }
 
 /**
