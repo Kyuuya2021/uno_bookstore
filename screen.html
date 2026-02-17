@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Uno Bookstore — Screen</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="page-screen">
+
+  <!-- Header -->
+  <div class="screen-header">
+    <h1>📚 Uno Bookstore</h1>
+    <div class="screen-stats">
+      <span>👥 <strong id="stat-count">0</strong> 人</span>
+      <span>⏰ <strong id="stat-time"></strong></span>
+      <span class="dom-limit-badge" id="dom-limit-badge">DOM上限到達</span>
+    </div>
+  </div>
+
+  <!-- Avatar Grid -->
+  <div class="avatar-grid" id="avatar-grid">
+    <div class="empty-state" id="empty-state">
+      <span class="empty-icon">🏠</span>
+      <p>まだ誰もチェックインしていません</p>
+      <p style="font-size:0.85rem; margin-top:0.5rem;">チェックインページからアバターを作成してください</p>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div style="text-align:center; margin-top:1rem;">
+    <a href="index.html" class="nav-link">← チェックインページに戻る</a>
+  </div>
+
+  <!-- Firebase SDK (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  
+  <!-- App Scripts -->
+  <script src="js/svg-assets.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/screen.js"></script>
+</body>
+</html>
