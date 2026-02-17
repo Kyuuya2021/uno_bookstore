@@ -1264,7 +1264,7 @@
   function showModal(modal) {
     if (!modal) return;
     modal.style.display = 'flex';
-    const card = modal.querySelector('.modal-card') || modal.querySelector('.wifi-mini-card') || modal.querySelector('.detail-card');
+    const card = modal.querySelector('.modal-card') || modal.querySelector('.wifi-mini-card');
     if (card) {
       card.style.animation = 'none';
       card.offsetHeight;
@@ -1278,96 +1278,84 @@
   }
 
   // ============================================================
-  // Detail Modal (event / book)
+  // Expand Detail (in-place card expansion)
   // ============================================================
-  const detailModal = document.getElementById('detail-modal');
-  const detailCard = document.getElementById('detail-card');
-  let detailParticipantUnsub = null;
+  const expandDetail = document.getElementById('expand-detail');
+  const expandScroll = document.getElementById('expand-detail-scroll');
+  const expandCloseBtn = document.getElementById('expand-close-btn');
+  let expandParticipantUnsub = null;
 
   function openDetailModal(item) {
-    if (!detailModal || !detailCard) return;
+    if (!expandDetail || !expandScroll || !infoArea) return;
 
     // Clean up previous listener
-    if (detailParticipantUnsub) {
-      detailParticipantUnsub();
-      detailParticipantUnsub = null;
+    if (expandParticipantUnsub) {
+      expandParticipantUnsub();
+      expandParticipantUnsub = null;
     }
 
+    // Pause carousel
+    if (carouselTimer) clearInterval(carouselTimer);
+
+    // Build content
     let html = '';
 
     if (item.imageUrl) {
-      html += `<img class="detail-card-img" src="${escapeHTML(item.imageUrl)}" alt="">`;
+      html += `<img class="expand-img" src="${escapeHTML(item.imageUrl)}" alt="">`;
     }
-
-    html += '<div class="detail-card-body">';
 
     if (item.type === 'event') {
       const typeClass = item.isToday ? 'type-today' : 'type-event';
       const typeLabel = item.isToday ? 'TODAY' : 'EVENT';
 
-      html += `<span class="detail-card-type ${typeClass}">${typeLabel}</span>`;
-      html += `<div class="detail-card-date">${escapeHTML(item.dateLabel)}${item.time ? ' ' + escapeHTML(item.time) : ''}</div>`;
-      html += `<div class="detail-card-title">${escapeHTML(item.title)}</div>`;
+      html += `<span class="expand-type ${typeClass}">${typeLabel}</span>`;
+      html += `<div class="expand-date">${escapeHTML(item.dateLabel)}${item.time ? ' ' + escapeHTML(item.time) : ''}</div>`;
+      html += `<div class="expand-title">${escapeHTML(item.title)}</div>`;
       if (item.description) {
-        html += `<div class="detail-card-desc">${escapeHTML(item.description)}</div>`;
+        html += `<div class="expand-desc">${escapeHTML(item.description)}</div>`;
       }
 
-      // Participation section
       const user = auth.currentUser;
       if (user && !user.isAnonymous) {
         html += `
-          <div class="detail-card-actions">
-            <button class="detail-join-btn" id="detail-join-btn">参加する</button>
-            <span class="detail-join-count" id="detail-join-count"></span>
+          <div class="expand-actions">
+            <button class="expand-join-btn" id="expand-join-btn">参加する</button>
+            <span class="expand-join-count" id="expand-join-count"></span>
           </div>
         `;
       } else {
         html += `
-          <div class="detail-card-actions">
-            <span class="detail-join-count" id="detail-join-count"></span>
+          <div class="expand-actions">
+            <span class="expand-join-count" id="expand-join-count"></span>
           </div>
-          <div class="detail-login-hint">Google ログインするとイベントに参加できます</div>
+          <div class="expand-login-hint">Google ログインするとイベントに参加できます</div>
         `;
       }
 
     } else {
-      html += '<span class="detail-card-type type-book">BOOK</span>';
-      html += `<div class="detail-card-title">${escapeHTML(item.title)}</div>`;
+      html += '<span class="expand-type type-book">BOOK</span>';
+      html += `<div class="expand-title">${escapeHTML(item.title)}</div>`;
       if (item.author) {
-        html += `<div class="detail-card-meta">${escapeHTML(item.author)}</div>`;
+        html += `<div class="expand-meta">${escapeHTML(item.author)}</div>`;
       }
       if (item.genre) {
-        html += `<div class="detail-card-meta" style="color:var(--color-primary);">${escapeHTML(item.genre)}</div>`;
+        html += `<div class="expand-meta" style="color:var(--color-primary);">${escapeHTML(item.genre)}</div>`;
       }
       if (item.comment) {
-        html += `<div class="detail-card-desc">${escapeHTML(item.comment)}</div>`;
+        html += `<div class="expand-desc">${escapeHTML(item.comment)}</div>`;
       }
     }
 
-    html += '<button class="detail-close-btn" id="detail-close-btn">閉じる</button>';
-    html += '</div>';
+    expandScroll.innerHTML = html;
+    expandScroll.scrollTop = 0;
 
-    detailCard.innerHTML = html;
-
-    // Show modal
-    showModal(detailModal);
-
-    // Close button
-    const closeBtn = document.getElementById('detail-close-btn');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', () => {
-        hideModal(detailModal);
-        if (detailParticipantUnsub) {
-          detailParticipantUnsub();
-          detailParticipantUnsub = null;
-        }
-      });
-    }
+    // Trigger expansion
+    infoArea.classList.add('expanded');
 
     // Event participation logic
     if (item.type === 'event' && item.id) {
-      const joinBtn = document.getElementById('detail-join-btn');
-      const joinCount = document.getElementById('detail-join-count');
+      const joinBtn = document.getElementById('expand-join-btn');
+      const joinCount = document.getElementById('expand-join-count');
 
       const ref = db.ref(`event_participants/${item.id}`);
       const onValue = (snapshot) => {
@@ -1385,7 +1373,7 @@
       };
 
       ref.on('value', onValue);
-      detailParticipantUnsub = () => ref.off('value', onValue);
+      expandParticipantUnsub = () => ref.off('value', onValue);
 
       if (joinBtn) {
         joinBtn.addEventListener('click', async () => {
@@ -1401,7 +1389,7 @@
               await joinEvent(item.id);
             }
           } catch (e) {
-            console.error('Detail join/leave error:', e);
+            console.error('Expand join/leave error:', e);
           }
           joinBtn.disabled = false;
         });
@@ -1409,17 +1397,23 @@
     }
   }
 
-  // Detail modal background click to close
-  if (detailModal) {
-    detailModal.addEventListener('click', (e) => {
-      if (e.target === detailModal) {
-        hideModal(detailModal);
-        if (detailParticipantUnsub) {
-          detailParticipantUnsub();
-          detailParticipantUnsub = null;
-        }
-      }
-    });
+  function closeExpandDetail() {
+    if (!infoArea) return;
+
+    infoArea.classList.remove('expanded');
+
+    // Clean up listener
+    if (expandParticipantUnsub) {
+      expandParticipantUnsub();
+      expandParticipantUnsub = null;
+    }
+
+    // Resume carousel
+    resetCarouselTimer();
+  }
+
+  if (expandCloseBtn) {
+    expandCloseBtn.addEventListener('click', closeExpandDetail);
   }
 
   // Wi-Fi FAB click
