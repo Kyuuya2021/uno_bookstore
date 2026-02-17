@@ -8,60 +8,213 @@
 </head>
 <body class="page-dashboard">
 
-  <div class="dashboard-container">
+  <!-- Admin Password Gate -->
+  <div class="admin-gate" id="admin-gate">
+    <div class="admin-gate-card">
+      <span style="font-size:2rem;display:block;margin-bottom:0.5rem;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </span>
+      <h2>管理者ログイン</h2>
+      <p>ダッシュボードを表示するにはパスワードを入力してください</p>
+      <input type="password" id="admin-password" class="nickname-input" placeholder="パスワード" autocomplete="off" style="margin-top:1rem;">
+      <button class="btn-submit" id="btn-admin-login" style="margin-top:0.75rem;">ログイン</button>
+      <div class="status-bar" id="admin-error" style="margin-top:0.75rem;"></div>
+      <a href="index.html" class="nav-link" style="display:inline-block;margin-top:1rem;">← チェックインに戻る</a>
+    </div>
+  </div>
+
+  <div class="dashboard-container" id="dashboard-content" style="display:none;">
     <!-- Header -->
     <div class="dash-header">
-      <h1>📊 Dashboard</h1>
-      <p class="subtitle">Uno Bookstore 来訪者統計</p>
+      <h1>Uno Bookstore</h1>
+      <p class="subtitle">管理者ダッシュボード</p>
     </div>
 
-    <!-- Summary Cards -->
-    <div class="dash-summary">
-      <div class="summary-card">
-        <span class="summary-icon">👥</span>
-        <div class="summary-value" id="today-count">-</div>
-        <div class="summary-label">本日の来訪者</div>
+    <!-- Tab Navigation -->
+    <div class="dash-tabs">
+      <button class="dash-tab active" data-tab="stats">統計</button>
+      <button class="dash-tab" data-tab="events">イベント</button>
+      <button class="dash-tab" data-tab="books">おすすめ本</button>
+    </div>
+
+    <!-- ============================================================
+         TAB 1: Statistics (existing)
+         ============================================================ -->
+    <div class="dash-tab-content active" id="tab-stats">
+      <!-- Summary Cards -->
+      <div class="dash-summary">
+        <div class="summary-card">
+          <span class="summary-icon summary-icon--visitors"></span>
+          <div class="summary-value" id="today-count">-</div>
+          <div class="summary-label">本日の来訪者</div>
+        </div>
+        <div class="summary-card">
+          <span class="summary-icon summary-icon--online"></span>
+          <div class="summary-value" id="current-online">-</div>
+          <div class="summary-label">現在オンライン</div>
+        </div>
+        <div class="summary-card">
+          <span class="summary-icon summary-icon--week"></span>
+          <div class="summary-value" id="week-total">-</div>
+          <div class="summary-label">今週の合計</div>
+        </div>
+        <div class="summary-card">
+          <span class="summary-icon summary-icon--peak"></span>
+          <div class="summary-value" id="peak-hour">-</div>
+          <div class="summary-label">ピーク時間帯</div>
+        </div>
       </div>
-      <div class="summary-card">
-        <span class="summary-icon">🔥</span>
-        <div class="summary-value" id="current-online">-</div>
-        <div class="summary-label">現在オンライン</div>
+
+      <!-- Charts Section -->
+      <div class="dash-section">
+        <h2>過去7日間の来訪者数</h2>
+        <div class="chart-container" id="weekly-chart"></div>
       </div>
-      <div class="summary-card">
-        <span class="summary-icon">📅</span>
-        <div class="summary-value" id="week-total">-</div>
-        <div class="summary-label">今週の合計</div>
+
+      <!-- Hourly Distribution -->
+      <div class="dash-section">
+        <h2>本日の時間帯別分布</h2>
+        <div class="chart-container" id="hourly-chart"></div>
       </div>
-      <div class="summary-card">
-        <span class="summary-icon">⏰</span>
-        <div class="summary-value" id="peak-hour">-</div>
-        <div class="summary-label">ピーク時間帯</div>
+
+      <!-- Role Breakdown -->
+      <div class="dash-section">
+        <h2>ロール別内訳（本日）</h2>
+        <div class="role-breakdown" id="role-breakdown"></div>
+      </div>
+
+      <!-- Recent Visitors -->
+      <div class="dash-section">
+        <h2>最近のチェックイン</h2>
+        <div class="visitor-list" id="visitor-list">
+          <p class="dash-empty">データを読み込み中...</p>
+        </div>
       </div>
     </div>
 
-    <!-- Charts Section -->
-    <div class="dash-section">
-      <h2>📈 過去7日間の来訪者数</h2>
-      <div class="chart-container" id="weekly-chart"></div>
+    <!-- ============================================================
+         TAB 2: Event Management
+         ============================================================ -->
+    <div class="dash-tab-content" id="tab-events">
+      <div class="dash-section">
+        <div class="section-header-row">
+          <h2>イベント管理</h2>
+          <button class="btn-add" id="btn-add-event">＋ 新規追加</button>
+        </div>
+
+        <!-- Add/Edit Form (hidden by default) -->
+        <div class="item-form" id="event-form" style="display:none;">
+          <input type="hidden" id="event-edit-id" value="">
+          <div class="form-row">
+            <label>イベント名 <span class="required">*</span></label>
+            <input type="text" id="event-title" class="form-input" placeholder="例: 読書会 vol.3" maxlength="100">
+          </div>
+          <div class="form-row">
+            <label>開催日 <span class="required">*</span></label>
+            <input type="date" id="event-date" class="form-input">
+          </div>
+          <div class="form-row-2col">
+            <div class="form-row">
+              <label>開始時間</label>
+              <input type="time" id="event-time-start" class="form-input">
+            </div>
+            <div class="form-row">
+              <label>終了時間</label>
+              <input type="time" id="event-time-end" class="form-input">
+            </div>
+          </div>
+          <div class="form-row">
+            <label>説明</label>
+            <textarea id="event-description" class="form-input form-textarea" placeholder="イベントの詳細" maxlength="500"></textarea>
+          </div>
+          <div class="form-row">
+            <label>サムネイル画像</label>
+            <div class="image-upload-area" id="event-upload-area">
+              <input type="file" id="event-image" accept="image/jpeg,image/png,image/gif,image/webp" class="image-file-input">
+              <div class="image-upload-placeholder" id="event-upload-placeholder">
+                <span class="upload-icon">+</span>
+                <span>クリックまたはドラッグで画像を追加</span>
+                <span class="upload-hint">JPEG, PNG, GIF, WebP（5MB以下）</span>
+              </div>
+              <div class="image-preview-container" id="event-preview" style="display:none;">
+                <img id="event-preview-img" src="" alt="プレビュー">
+                <button type="button" class="btn-remove-image" id="btn-remove-event-image">&times;</button>
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-save" id="btn-save-event">保存</button>
+            <button class="btn-cancel" id="btn-cancel-event">キャンセル</button>
+          </div>
+        </div>
+
+        <!-- Event List -->
+        <div id="event-list">
+          <p class="dash-empty">読み込み中...</p>
+        </div>
+      </div>
     </div>
 
-    <!-- Hourly Distribution -->
-    <div class="dash-section">
-      <h2>🕐 本日の時間帯別分布</h2>
-      <div class="chart-container" id="hourly-chart"></div>
-    </div>
+    <!-- ============================================================
+         TAB 3: Book Management
+         ============================================================ -->
+    <div class="dash-tab-content" id="tab-books">
+      <div class="dash-section">
+        <div class="section-header-row">
+          <h2>おすすめ本管理</h2>
+          <button class="btn-add" id="btn-add-book">＋ 新規追加</button>
+        </div>
 
-    <!-- Role Breakdown -->
-    <div class="dash-section">
-      <h2>🏷️ ロール別内訳（本日）</h2>
-      <div class="role-breakdown" id="role-breakdown"></div>
-    </div>
+        <!-- Add/Edit Form (hidden by default) -->
+        <div class="item-form" id="book-form" style="display:none;">
+          <input type="hidden" id="book-edit-id" value="">
+          <div class="form-row">
+            <label>書名 <span class="required">*</span></label>
+            <input type="text" id="book-title" class="form-input" placeholder="例: ノルウェイの森" maxlength="100">
+          </div>
+          <div class="form-row-2col">
+            <div class="form-row">
+              <label>著者</label>
+              <input type="text" id="book-author" class="form-input" placeholder="例: 村上春樹" maxlength="50">
+            </div>
+            <div class="form-row">
+              <label>ジャンル</label>
+              <input type="text" id="book-genre" class="form-input" placeholder="例: 小説" maxlength="30">
+            </div>
+          </div>
+          <div class="form-row">
+            <label>スタッフコメント</label>
+            <textarea id="book-comment" class="form-input form-textarea" placeholder="おすすめポイント" maxlength="500"></textarea>
+          </div>
+          <div class="form-row">
+            <label>表紙画像</label>
+            <div class="image-upload-area" id="book-upload-area">
+              <input type="file" id="book-image" accept="image/jpeg,image/png,image/gif,image/webp" class="image-file-input">
+              <div class="image-upload-placeholder" id="book-upload-placeholder">
+                <span class="upload-icon">+</span>
+                <span>クリックまたはドラッグで画像を追加</span>
+                <span class="upload-hint">JPEG, PNG, GIF, WebP（5MB以下）</span>
+              </div>
+              <div class="image-preview-container" id="book-preview" style="display:none;">
+                <img id="book-preview-img" src="" alt="プレビュー">
+                <button type="button" class="btn-remove-image" id="btn-remove-book-image">&times;</button>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>表示順（数値が小さいほど上）</label>
+            <input type="number" id="book-order" class="form-input" value="0" min="0" max="999">
+          </div>
+          <div class="form-actions">
+            <button class="btn-save" id="btn-save-book">保存</button>
+            <button class="btn-cancel" id="btn-cancel-book">キャンセル</button>
+          </div>
+        </div>
 
-    <!-- Recent Visitors -->
-    <div class="dash-section">
-      <h2>🕒 最近のチェックイン</h2>
-      <div class="visitor-list" id="visitor-list">
-        <p class="dash-empty">データを読み込み中...</p>
+        <!-- Book List -->
+        <div id="book-list">
+          <p class="dash-empty">読み込み中...</p>
+        </div>
       </div>
     </div>
 
@@ -69,7 +222,30 @@
     <div style="text-align:center; margin-top:2rem;">
       <a href="index.html" class="nav-link">← チェックイン</a>
       <span style="margin:0 0.5rem; color:var(--color-text-light);">|</span>
-      <a href="screen.html" class="nav-link">📺 スクリーン</a>
+      <a href="screen.html" class="nav-link">スクリーン</a>
+    </div>
+  </div>
+
+  <!-- Crop Modal -->
+  <div class="crop-modal" id="crop-modal" style="display:none;">
+    <div class="crop-modal-inner">
+      <div class="crop-modal-header">
+        <h3>画像をトリミング</h3>
+      </div>
+      <div class="crop-viewport" id="crop-viewport">
+        <img id="crop-image" src="" alt="crop" draggable="false">
+        <div class="crop-frame" id="crop-frame"></div>
+      </div>
+      <div class="crop-controls">
+        <label class="crop-zoom-label">
+          <span>ズーム</span>
+          <input type="range" id="crop-zoom" min="100" max="300" value="100" class="crop-zoom-slider">
+        </label>
+      </div>
+      <div class="crop-actions">
+        <button class="btn-save" id="btn-crop-confirm">トリミングして適用</button>
+        <button class="btn-cancel" id="btn-crop-cancel">キャンセル</button>
+      </div>
     </div>
   </div>
 
@@ -77,8 +253,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 
-  <script src="js/firebase-config.js"></script>
-  <script src="js/dashboard.js"></script>
+  <script src="js/firebase-config.js?v=8"></script>
+  <script src="js/dashboard.js?v=8"></script>
 </body>
 </html>

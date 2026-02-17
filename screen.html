@@ -8,40 +8,150 @@
 </head>
 <body class="page-screen">
 
-  <!-- Header -->
+  <!-- Header (top) -->
   <div class="screen-header">
-    <h1>📚 Uno Bookstore</h1>
+    <h1>Uno Bookstore</h1>
     <div class="screen-stats">
-      <span>👥 <strong id="stat-count">0</strong> 人</span>
-      <span>⏰ <strong id="stat-time"></strong></span>
+      <span><strong id="stat-count">0</strong> 人</span>
+      <span><strong id="stat-time"></strong></span>
       <span class="dom-limit-badge" id="dom-limit-badge">DOM上限到達</span>
     </div>
   </div>
 
-  <!-- Avatar Grid -->
-  <div class="avatar-grid" id="avatar-grid">
-    <div class="empty-state" id="empty-state">
-      <span class="empty-icon">🏠</span>
-      <p>まだ誰もチェックインしていません</p>
-      <p style="font-size:0.85rem; margin-top:0.5rem;">チェックインページからアバターを作成してください</p>
+  <!-- Info Carousel Area -->
+  <div class="screen-info-area" id="screen-info-area">
+    <div class="carousel-container" id="carousel-container">
+      <div class="carousel-slides" id="carousel-slides">
+        <!-- slides are injected by JS -->
+      </div>
+      <div class="carousel-dots" id="carousel-dots"></div>
     </div>
   </div>
 
-  <!-- Navigation -->
-  <div style="text-align:center; margin-top:1rem;">
-    <a href="index.html" class="nav-link">← チェックイン</a>
-    <span style="margin:0 0.5rem; color:rgba(255,255,255,0.4);">|</span>
-    <a href="dashboard.html" class="nav-link">📊 ダッシュボード</a>
+  <!-- Walk Area (bottom) -->
+  <div class="screen-walk-area" id="screen-walk-area">
+    <!-- Avatar walk area -->
+    <div class="avatar-walk-zone" id="avatar-walk-zone">
+      <div class="empty-state" id="empty-state">
+        <span class="empty-icon"></span>
+        <p>まだ誰もチェックインしていません</p>
+        <p style="font-size:0.85rem; margin-top:0.5rem;">チェックインページからアバターを作成してください</p>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="screen-nav">
+      <a href="index.html" class="nav-link">← チェックイン</a>
+      <span style="margin:0 0.5rem; color:rgba(255,255,255,0.4);">|</span>
+      <a href="dashboard.html" class="nav-link">ダッシュボード</a>
+    </div>
+  </div>
+
+  <!-- Wi-Fi FAB (bottom-left) -->
+  <div class="wifi-fab-wrap">
+    <button class="wifi-fab" id="wifi-fab" title="Wi-Fi">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+    </button>
+  </div>
+
+  <!-- Survey Modal (for Wi-Fi) -->
+  <div class="modal-overlay" id="screen-survey-modal" style="display:none;">
+    <div class="modal-card survey-card">
+      <div class="modal-header">
+        <h2>かんたんアンケート</h2>
+        <p>回答するとWi-Fi情報をお伝えします</p>
+      </div>
+      <div class="survey-body">
+        <div class="survey-question">
+          <p class="survey-q-label">Q1. 宇野書店を知ったきっかけは？</p>
+          <div class="survey-options">
+            <button class="survey-opt screen-survey-opt" data-q="q1" data-val="sns">SNS</button>
+            <button class="survey-opt screen-survey-opt" data-q="q1" data-val="friend">友人の紹介</button>
+            <button class="survey-opt screen-survey-opt" data-q="q1" data-val="passby">通りがかり</button>
+            <button class="survey-opt screen-survey-opt" data-q="q1" data-val="search">ネット検索</button>
+            <button class="survey-opt screen-survey-opt" data-q="q1" data-val="other">その他</button>
+          </div>
+        </div>
+        <div class="survey-question">
+          <p class="survey-q-label">Q2. 今日の目的は？</p>
+          <div class="survey-options">
+            <button class="survey-opt screen-survey-opt" data-q="q2" data-val="reading">読書</button>
+            <button class="survey-opt screen-survey-opt" data-q="q2" data-val="work">仕事・勉強</button>
+            <button class="survey-opt screen-survey-opt" data-q="q2" data-val="event">イベント参加</button>
+            <button class="survey-opt screen-survey-opt" data-q="q2" data-val="relax">ゆっくり過ごす</button>
+          </div>
+        </div>
+        <div class="survey-question">
+          <p class="survey-q-label">Q3. 来店頻度は？</p>
+          <div class="survey-options">
+            <button class="survey-opt screen-survey-opt" data-q="q3" data-val="first">初めて</button>
+            <button class="survey-opt screen-survey-opt" data-q="q3" data-val="rare">月1回以下</button>
+            <button class="survey-opt screen-survey-opt" data-q="q3" data-val="sometimes">月2〜3回</button>
+            <button class="survey-opt screen-survey-opt" data-q="q3" data-val="often">週1回以上</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn-submit survey-submit" id="screen-btn-survey-submit" disabled>回答してWi-Fiを見る</button>
+    </div>
+  </div>
+
+  <!-- WiFi Info Modal -->
+  <div class="modal-overlay" id="screen-wifi-modal" style="display:none;">
+    <div class="modal-card wifi-card">
+      <div class="modal-header">
+        <span class="wifi-big-icon">Wi-Fi</span>
+        <h2>Wi-Fi に接続しよう</h2>
+      </div>
+      <div class="wifi-body">
+        <div class="wifi-row">
+          <span class="wifi-label">ネットワーク名</span>
+          <div class="wifi-value-row">
+            <code class="wifi-value" id="screen-wifi-ssid">Uno-book-store</code>
+            <button class="btn-copy screen-btn-copy" data-target="screen-wifi-ssid" title="コピー">Copy</button>
+          </div>
+        </div>
+        <div class="wifi-row">
+          <span class="wifi-label">パスワード</span>
+          <div class="wifi-value-row">
+            <code class="wifi-value" id="screen-wifi-pass">2NT8425E63</code>
+            <button class="btn-copy screen-btn-copy" data-target="screen-wifi-pass" title="コピー">Copy</button>
+          </div>
+        </div>
+      </div>
+      <div class="wifi-tip">
+        <p>スマホの設定 → Wi-Fi から接続してください</p>
+      </div>
+      <button class="btn-submit wifi-continue" id="screen-wifi-close">閉じる</button>
+    </div>
+  </div>
+
+  <!-- Comment FAB + Expandable Input (shown for logged-in users) -->
+  <div class="comment-fab-wrap" id="comment-bar" style="display:none;">
+    <button class="comment-fab" id="comment-fab" title="コメント">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+    </button>
+    <div class="comment-expand" id="comment-expand">
+      <div class="comment-expand-inner">
+        <input type="text" id="comment-input" class="comment-input" placeholder="コメントを入力..." maxlength="50" autocomplete="off">
+        <button class="comment-send-btn" id="comment-send-btn" disabled>
+          <span class="comment-send-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </span>
+        </button>
+      </div>
+      <div class="comment-bar-hint" id="comment-bar-hint"></div>
+    </div>
   </div>
 
   <!-- Firebase SDK (compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
   
   <!-- App Scripts -->
-  <script src="js/svg-assets.js"></script>
-  <script src="js/firebase-config.js"></script>
-  <script src="js/screen.js"></script>
+  <script src="js/svg-assets.js?v=11"></script>
+  <script src="js/firebase-config.js?v=11"></script>
+  <script src="js/screen.js?v=11"></script>
 </body>
 </html>

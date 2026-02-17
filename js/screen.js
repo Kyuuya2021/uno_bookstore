@@ -1,39 +1,51 @@
 /**
  * screen.js — スクリーン表示画面のロジック
  * 
- * 【必須制約の実装】
- * 1. Layered SVG System: 3層の透過SVGをz-indexで重ねて表示
- * 2. DOMノード制限: 画面上のアバター数が MAX_AVATARS を超えたら最古から削除
- * 3. Firebase読み取り制限: limitToLast(100) + 当日フィルター
- * 
- * 【新機能】
- * 4. ニックネーム表示
- * 5. 滞在時間のリアルタイム表示（○○分滞在中）
+ * レイアウト:
+ *   上部: カルーセル（イベント情報・おすすめ本を自動ローテーション）
+ *   下部: アバター歩行エリア（ランダムに歩き回る）
  */
 
 (function () {
   'use strict';
+
+  const DEBUG = true;
+  function log(label, ...args) {
+    if (DEBUG) console.log(`[screen.js] ${label}`, ...args);
+  }
 
   // ============================================================
   // Constants
   // ============================================================
   const MAX_AVATARS = 50;
   const REMOVE_ANIMATION_MS = 400;
-  const STAY_TIME_UPDATE_INTERVAL = 30000; // 30秒ごとに滞在時間を更新
+  const STAY_TIME_UPDATE_INTERVAL = 30000;
+  const CAROUSEL_INTERVAL = 6000;
+  const WANDER_MIN_DELAY = 6000;
+  const WANDER_MAX_DELAY = 14000;
+  const AVATAR_WIDTH = 120;
+  const AVATAR_HEIGHT = 175;
 
   // ============================================================
   // DOM References
   // ============================================================
-  const avatarGrid = document.getElementById('avatar-grid');
+  const walkZone = document.getElementById('avatar-walk-zone');
   const emptyState = document.getElementById('empty-state');
   const statCount = document.getElementById('stat-count');
   const statTime = document.getElementById('stat-time');
   const domLimitBadge = document.getElementById('dom-limit-badge');
+  const infoArea = document.getElementById('screen-info-area');
+  const walkArea = document.getElementById('screen-walk-area');
+  const carouselSlides = document.getElementById('carousel-slides');
+  const carouselDots = document.getElementById('carousel-dots');
 
   // ============================================================
-  // State: 表示中アバターの管理（挿入順序を保持）
+  // State
   // ============================================================
-  const avatarMap = new Map(); // uid → { element, data, addedAt }
+  const avatarMap = new Map();
+  let carouselItems = [];
+  let carouselIndex = 0;
+  let carouselTimer = null;
 
   // ============================================================
   // Clock
@@ -49,7 +61,7 @@
   setInterval(updateClock, 1000);
 
   // ============================================================
-  // Stay Time: 滞在時間の計算とフォーマット
+  // Stay Time
   // ============================================================
   function formatStayTime(timestampMs) {
     const now = Date.now();
@@ -63,9 +75,6 @@
     return `${h}時間${m}分滞在中`;
   }
 
-  /**
-   * 全アバターの滞在時間を一括更新
-   */
   function updateAllStayTimes() {
     avatarMap.forEach((entry) => {
       const stayEl = entry.element.querySelector('.stay-time');
@@ -88,7 +97,7 @@
   }
 
   // ============================================================
-  // DOM Node Limit: 最古のアバターを削除
+  // DOM Node Limit
   // ============================================================
   function enforceAvatarLimit() {
     while (avatarMap.size > MAX_AVATARS) {
@@ -98,7 +107,7 @@
   }
 
   // ============================================================
-  // HTML escape（XSS対策）
+  // HTML escape
   // ============================================================
   function escapeHTML(str) {
     const div = document.createElement('div');
@@ -107,18 +116,118 @@
   }
 
   // ============================================================
+  // Entrance Sound Effect
+  // ============================================================
+  function playEntranceSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.08);
+      osc.frequency.exponentialRampToValueAtTime(1047, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.3);
+    } catch (e) {
+      // silently ignore
+    }
+  }
+
+  // ============================================================
+  // Walk Zone Bounds
+  // ============================================================
+  function getWalkBounds() {
+    const rect = walkZone.getBoundingClientRect();
+    return {
+      width: rect.width,
+      height: rect.height,
+      maxX: Math.max(0, rect.width - AVATAR_WIDTH),
+      maxY: Math.max(0, rect.height - AVATAR_HEIGHT),
+    };
+  }
+
+  function randomPosition() {
+    const bounds = getWalkBounds();
+    return {
+      x: Math.random() * bounds.maxX,
+      y: Math.random() * bounds.maxY,
+    };
+  }
+
+  // ============================================================
+  // Avatar Wandering System
+  // ============================================================
+  function startWandering(uid) {
+    const entry = avatarMap.get(uid);
+    if (!entry) return;
+
+    const wander = () => {
+      const currentEntry = avatarMap.get(uid);
+      if (!currentEntry) return;
+
+      const el = currentEntry.element;
+      const bounds = getWalkBounds();
+      if (bounds.width === 0) return;
+
+      const targetX = Math.random() * bounds.maxX;
+      const targetY = Math.random() * bounds.maxY;
+
+      const currentX = parseFloat(el.style.left) || 0;
+      el.classList.toggle('facing-left', targetX < currentX);
+
+      el.classList.remove('idle');
+      el.classList.add('walking');
+
+      el.style.left = targetX + 'px';
+      el.style.top = targetY + 'px';
+
+      const moveDuration = 8000;
+      setTimeout(() => {
+        if (!avatarMap.has(uid)) return;
+        el.classList.remove('walking');
+        el.classList.add('idle');
+      }, moveDuration);
+
+      const nextDelay = WANDER_MIN_DELAY + Math.random() * (WANDER_MAX_DELAY - WANDER_MIN_DELAY);
+      currentEntry.wanderTimer = setTimeout(wander, moveDuration + nextDelay);
+    };
+
+    const initialDelay = 1000 + Math.random() * 2000;
+    entry.wanderTimer = setTimeout(wander, initialDelay);
+  }
+
+  function stopWandering(uid) {
+    const entry = avatarMap.get(uid);
+    if (entry && entry.wanderTimer) {
+      clearTimeout(entry.wanderTimer);
+      entry.wanderTimer = null;
+    }
+  }
+
+  // ============================================================
   // Avatar DOM Operations
   // ============================================================
 
   function addAvatarToDOM(uid, data) {
+    log('ADD', uid, data);
+
     if (avatarMap.has(uid)) {
       updateAvatarInDOM(uid, data);
       return;
     }
 
+    const pos = randomPosition();
+
     const container = document.createElement('div');
-    container.className = 'avatar-container';
+    container.className = 'avatar-container entering';
     container.dataset.uid = uid;
+    container.style.left = pos.x + 'px';
+    container.style.top = pos.y + 'px';
 
     const wrapper = document.createElement('div');
     wrapper.className = 'avatar-wrapper';
@@ -127,7 +236,7 @@
     const label = document.createElement('div');
     label.className = 'avatar-label';
 
-    const modeText = { work: '🔥 作業中', break: '☕ 休憩中', meeting: '💬 会議中' };
+    const modeText = { work: '作業中', break: '休憩中', meeting: '会議中' };
     const nickname = escapeHTML(data.nickname || 'Guest');
     const stayTime = data.timestamp ? formatStayTime(data.timestamp) : '';
 
@@ -139,19 +248,29 @@
 
     container.appendChild(wrapper);
     container.appendChild(label);
-    avatarGrid.appendChild(container);
+    walkZone.appendChild(container);
+
+    setTimeout(() => {
+      container.classList.remove('entering');
+      container.classList.add('idle');
+    }, 600);
+
+    playEntranceSound();
 
     avatarMap.set(uid, {
       element: container,
       data: data,
       addedAt: Date.now(),
+      wanderTimer: null,
     });
 
+    startWandering(uid);
     enforceAvatarLimit();
     updateStats();
   }
 
   function updateAvatarInDOM(uid, data) {
+    log('UPDATE', uid, data);
     const entry = avatarMap.get(uid);
     if (!entry) return;
 
@@ -162,7 +281,7 @@
 
     const label = entry.element.querySelector('.avatar-label');
     if (label) {
-      const modeText = { work: '🔥 作業中', break: '☕ 休憩中', meeting: '💬 会議中' };
+      const modeText = { work: '作業中', break: '休憩中', meeting: '会議中' };
       const nickname = escapeHTML(data.nickname || 'Guest');
       const stayTime = data.timestamp ? formatStayTime(data.timestamp) : '';
 
@@ -177,8 +296,12 @@
   }
 
   function removeAvatarFromDOM(uid, isLimitRemoval = false) {
+    log('REMOVE', uid, 'isLimitRemoval:', isLimitRemoval);
+
     const entry = avatarMap.get(uid);
     if (!entry) return;
+
+    stopWandering(uid);
 
     const el = entry.element;
     el.classList.add('removing');
@@ -194,19 +317,532 @@
   }
 
   // ============================================================
+  // Carousel System
+  // ============================================================
+  function buildCarouselSlides(events, books) {
+    const todayStr = getTodayDateString();
+    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+    const slides = [];
+
+    const activeEvents = (events || []).filter(e => e.active && e.date >= todayStr);
+    activeEvents.sort((a, b) => a.date.localeCompare(b.date));
+
+    activeEvents.slice(0, 5).forEach(ev => {
+      const d = new Date(ev.date + 'T00:00:00');
+      const dateLabel = `${d.getMonth() + 1}/${d.getDate()}(${dayNames[d.getDay()]})`;
+      const isToday = ev.date === todayStr;
+
+      slides.push({
+        type: 'event',
+        isToday,
+        dateLabel,
+        time: ev.time || '',
+        title: ev.title,
+        description: ev.description || '',
+        imageUrl: ev.imageUrl || '',
+      });
+    });
+
+    const activeBooks = (books || []).filter(b => b.active);
+    activeBooks.slice(0, 5).forEach(bk => {
+      slides.push({
+        type: 'book',
+        title: bk.title,
+        author: bk.author || '',
+        genre: bk.genre || '',
+        comment: bk.comment || '',
+        imageUrl: bk.imageUrl || '',
+      });
+    });
+
+    return slides;
+  }
+
+  function renderCarousel() {
+    if (carouselItems.length === 0) {
+      infoArea.classList.add('hidden');
+      walkArea.classList.add('fullscreen');
+      carouselSlides.innerHTML = '';
+      carouselDots.innerHTML = '';
+      return;
+    }
+
+    infoArea.classList.remove('hidden');
+    walkArea.classList.remove('fullscreen');
+
+    let slidesHTML = '';
+    let dotsHTML = '';
+
+    carouselItems.forEach((item, i) => {
+      const activeClass = i === 0 ? ' active' : '';
+
+      if (item.type === 'event') {
+        const typeClass = item.isToday ? 'carousel-type-today' : 'carousel-type-event';
+        const typeLabel = item.isToday ? 'TODAY' : 'EVENT';
+
+        slidesHTML += `
+          <div class="carousel-slide carousel-slide-event${activeClass}" data-index="${i}">
+            ${item.imageUrl ? `<div class="carousel-slide-img"><img src="${escapeHTML(item.imageUrl)}" alt="${escapeHTML(item.title)}"></div>` : ''}
+            <div class="carousel-slide-body">
+              <span class="carousel-slide-type ${typeClass}">${typeLabel}</span>
+              <div class="carousel-slide-date">${escapeHTML(item.dateLabel)}${item.time ? ' ' + escapeHTML(item.time) : ''}</div>
+              <div class="carousel-slide-title">${escapeHTML(item.title)}</div>
+              ${item.description ? `<div class="carousel-slide-desc">${escapeHTML(item.description)}</div>` : ''}
+            </div>
+          </div>
+        `;
+      } else {
+        slidesHTML += `
+          <div class="carousel-slide carousel-slide-event${activeClass}" data-index="${i}">
+            ${item.imageUrl ? `<div class="carousel-slide-img"><img src="${escapeHTML(item.imageUrl)}" alt="${escapeHTML(item.title)}"></div>` : ''}
+            <div class="carousel-slide-body">
+              <span class="carousel-slide-type carousel-type-book">BOOK</span>
+              ${item.genre ? `<span class="carousel-slide-genre">${escapeHTML(item.genre)}</span>` : ''}
+              <div class="carousel-slide-title">${escapeHTML(item.title)}</div>
+              ${item.author ? `<div class="carousel-slide-meta">${escapeHTML(item.author)}</div>` : ''}
+              ${item.comment ? `<div class="carousel-slide-desc">${escapeHTML(item.comment)}</div>` : ''}
+            </div>
+          </div>
+        `;
+      }
+
+      dotsHTML += `<button class="carousel-dot${activeClass}" data-index="${i}"></button>`;
+    });
+
+    carouselSlides.innerHTML = slidesHTML;
+    carouselDots.innerHTML = dotsHTML;
+
+    carouselDots.querySelectorAll('.carousel-dot').forEach(dot => {
+      dot.addEventListener('click', () => {
+        goToSlide(parseInt(dot.dataset.index, 10));
+        resetCarouselTimer();
+      });
+    });
+
+    carouselIndex = 0;
+    resetCarouselTimer();
+  }
+
+  function goToSlide(index) {
+    const slides = carouselSlides.querySelectorAll('.carousel-slide');
+    const dots = carouselDots.querySelectorAll('.carousel-dot');
+    if (slides.length === 0) return;
+
+    carouselIndex = index % slides.length;
+
+    slides.forEach((s, i) => s.classList.toggle('active', i === carouselIndex));
+    dots.forEach((d, i) => d.classList.toggle('active', i === carouselIndex));
+  }
+
+  function nextSlide() {
+    if (carouselItems.length === 0) return;
+    goToSlide(carouselIndex + 1);
+  }
+
+  function resetCarouselTimer() {
+    if (carouselTimer) clearInterval(carouselTimer);
+    carouselTimer = setInterval(nextSlide, CAROUSEL_INTERVAL);
+  }
+
+  // ============================================================
   // Firebase Realtime Listener
   // ============================================================
   function startListening() {
-    listenToUsers(
-      (uid, data) => { addAvatarToDOM(uid, data); },
-      (uid, data) => { updateAvatarInDOM(uid, data); },
-      (uid) => { removeAvatarFromDOM(uid); }
-    );
+    log('startListening called');
+
+    const todayStart = getTodayStartTimestamp();
+    log('todayStart:', todayStart, new Date(todayStart).toISOString());
+
+    const query = db.ref('users')
+      .orderByChild('timestamp')
+      .startAt(todayStart)
+      .limitToLast(100);
+
+    query.on('child_added', (snapshot) => {
+      log('EVENT child_added', snapshot.key, snapshot.val());
+      addAvatarToDOM(snapshot.key, snapshot.val());
+    });
+
+    query.on('child_changed', (snapshot) => {
+      log('EVENT child_changed', snapshot.key, snapshot.val());
+      updateAvatarInDOM(snapshot.key, snapshot.val());
+    });
+
+    query.on('child_removed', (snapshot) => {
+      log('EVENT child_removed', snapshot.key, snapshot.val());
+      removeAvatarFromDOM(snapshot.key);
+    });
+
+    query.on('value', (snapshot) => {
+      log('EVENT value — total children:', snapshot.numChildren());
+    });
+
+    db.ref('users').on('value', () => {}, (error) => {
+      log('LISTENER ERROR', error.code, error.message);
+    });
+
+    return query;
   }
+
+  // ============================================================
+  // Carousel Data Listeners
+  // ============================================================
+  let cachedEvents = [];
+  let cachedBooks = [];
+
+  function startCarouselListeners() {
+    listenToEvents((events) => {
+      log('CAROUSEL events updated:', events.length);
+      cachedEvents = events;
+      carouselItems = buildCarouselSlides(cachedEvents, cachedBooks);
+      renderCarousel();
+    });
+
+    listenToBooks((books) => {
+      log('CAROUSEL books updated:', books.length);
+      cachedBooks = books;
+      carouselItems = buildCarouselSlides(cachedEvents, cachedBooks);
+      renderCarousel();
+    });
+  }
+
+  // ============================================================
+  // Comment System: Speech Bubbles
+  // ============================================================
+  const COMMENT_COOLDOWN = 10000;
+  let lastCommentTime = 0;
+
+  const commentBar = document.getElementById('comment-bar');
+  const commentFab = document.getElementById('comment-fab');
+  const commentExpand = document.getElementById('comment-expand');
+  const commentInput = document.getElementById('comment-input');
+  const commentSendBtn = document.getElementById('comment-send-btn');
+  const commentBarHint = document.getElementById('comment-bar-hint');
+
+  function showBubbleOnAvatar(uid, text) {
+    const entry = avatarMap.get(uid);
+    if (!entry) return;
+
+    const el = entry.element;
+
+    const existing = el.querySelector('.speech-bubble');
+    if (existing) existing.remove();
+
+    const bubble = document.createElement('div');
+    bubble.className = 'speech-bubble';
+    bubble.textContent = text;
+    el.appendChild(bubble);
+  }
+
+  function startCommentListener() {
+    listenToComments((comment) => {
+      log('COMMENT received:', comment);
+
+      if (avatarMap.has(comment.uid)) {
+        showBubbleOnAvatar(comment.uid, comment.text);
+      } else {
+        showFloatingBubble(comment);
+      }
+    });
+  }
+
+  const floatingBubbleMap = new Map();
+
+  function showFloatingBubble(comment) {
+    const bounds = getWalkBounds();
+    if (bounds.width === 0) return;
+
+    const existingBubble = floatingBubbleMap.get(comment.uid);
+    if (existingBubble && existingBubble.parentNode) {
+      existingBubble.remove();
+    }
+
+    const bubble = document.createElement('div');
+    bubble.className = 'speech-bubble';
+    bubble.style.position = 'absolute';
+    bubble.style.bottom = 'auto';
+    bubble.style.left = (Math.random() * (bounds.width - 180)) + 'px';
+    bubble.style.top = (Math.random() * (bounds.height * 0.5)) + 'px';
+    bubble.style.transform = 'none';
+    bubble.textContent = comment.text;
+
+    const nameTag = document.createElement('div');
+    nameTag.style.fontSize = '0.65rem';
+    nameTag.style.color = '#999';
+    nameTag.style.marginTop = '0.2rem';
+    nameTag.textContent = '— ' + (comment.nickname || 'Guest');
+    bubble.appendChild(nameTag);
+
+    walkZone.appendChild(bubble);
+    floatingBubbleMap.set(comment.uid, bubble);
+  }
+
+  // Comment FAB toggle + input logic
+  function setupCommentInput() {
+    if (!commentFab || !commentInput || !commentSendBtn) return;
+
+    // FAB toggle
+    commentFab.addEventListener('click', () => {
+      const isOpen = commentExpand.classList.contains('open');
+      if (isOpen) {
+        commentExpand.classList.remove('open');
+        commentFab.classList.remove('active');
+        commentFab.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
+      } else {
+        commentExpand.classList.add('open');
+        commentFab.classList.add('active');
+        commentFab.innerHTML = '&times;';
+        setTimeout(() => commentInput.focus(), 100);
+      }
+    });
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+      if (!commentBar.contains(e.target) && commentExpand.classList.contains('open')) {
+        commentExpand.classList.remove('open');
+        commentFab.classList.remove('active');
+        commentFab.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
+      }
+    });
+
+    commentInput.addEventListener('input', () => {
+      const hasText = commentInput.value.trim().length > 0;
+      const canSend = Date.now() - lastCommentTime >= COMMENT_COOLDOWN;
+      commentSendBtn.disabled = !hasText || !canSend;
+    });
+
+    commentInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !commentSendBtn.disabled) {
+        doSendComment();
+      }
+    });
+
+    commentSendBtn.addEventListener('click', () => {
+      doSendComment();
+    });
+  }
+
+  async function doSendComment() {
+    const text = commentInput.value.trim();
+    if (!text) return;
+
+    const now = Date.now();
+    if (now - lastCommentTime < COMMENT_COOLDOWN) {
+      const remaining = Math.ceil((COMMENT_COOLDOWN - (now - lastCommentTime)) / 1000);
+      commentBarHint.textContent = `${remaining}秒後に送信できます`;
+      return;
+    }
+
+    commentSendBtn.disabled = true;
+    commentInput.disabled = true;
+
+    try {
+      const user = auth.currentUser;
+      const userData = avatarMap.get(user.uid);
+      const nickname = user.displayName || (userData ? userData.data.nickname : 'Guest');
+      const color = userData ? userData.data.color : 'blue';
+
+      await sendComment(text, nickname, color);
+
+      commentInput.value = '';
+      lastCommentTime = Date.now();
+      commentBarHint.textContent = '送信しました';
+
+      // Close panel after short delay
+      setTimeout(() => {
+        commentExpand.classList.remove('open');
+        commentFab.classList.remove('active');
+        commentFab.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
+        commentBarHint.textContent = '';
+      }, 1500);
+
+    } catch (e) {
+      console.error('Comment send error:', e);
+      commentBarHint.textContent = 'エラー: ' + e.message;
+    } finally {
+      commentInput.disabled = false;
+      commentSendBtn.disabled = true;
+    }
+  }
+
+  function updateCommentBarVisibility() {
+    if (!commentBar) return;
+    const user = auth.currentUser;
+    if (user && !user.isAnonymous) {
+      commentBar.style.display = 'block';
+    } else {
+      commentBar.style.display = 'none';
+    }
+  }
+
+  // ============================================================
+  // Debug: Auth & Connection
+  // ============================================================
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      log('AUTH signed in:', user.uid);
+    } else {
+      log('AUTH signed out (null)');
+    }
+    updateCommentBarVisibility();
+  });
+
+  db.ref('.info/connected').on('value', (snap) => {
+    log('CONNECTION:', snap.val() ? 'CONNECTED' : 'DISCONNECTED');
+  });
+
+  async function checkDataViaREST() {
+    try {
+      const resp = await fetch(firebaseConfig.databaseURL + '/users.json?shallow=true');
+      const data = await resp.json();
+      log('REST CHECK — users in DB:', data ? Object.keys(data) : 'null/empty');
+    } catch (e) {
+      log('REST CHECK error:', e.message);
+    }
+  }
+
+  // ============================================================
+  // Wi-Fi FAB + Survey/WiFi Modals
+  // ============================================================
+  const SURVEY_DONE_KEY = 'uno_survey_done';
+
+  const wifiFab = document.getElementById('wifi-fab');
+  const screenSurveyModal = document.getElementById('screen-survey-modal');
+  const screenSurveySubmitBtn = document.getElementById('screen-btn-survey-submit');
+  const screenWifiModal = document.getElementById('screen-wifi-modal');
+  const screenWifiCloseBtn = document.getElementById('screen-wifi-close');
+
+  function isSurveyDone() {
+    return localStorage.getItem(SURVEY_DONE_KEY) === 'true';
+  }
+
+  function markSurveyDone() {
+    localStorage.setItem(SURVEY_DONE_KEY, 'true');
+  }
+
+  // Wi-Fi FAB click
+  if (wifiFab) {
+    wifiFab.addEventListener('click', () => {
+      if (isSurveyDone()) {
+        screenWifiModal.style.display = 'flex';
+      } else {
+        screenSurveyModal.style.display = 'flex';
+      }
+    });
+  }
+
+  // Survey option selection
+  const screenSurveyAnswers = { q1: null, q2: null, q3: null };
+
+  document.querySelectorAll('.screen-survey-opt').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const q = btn.dataset.q;
+      const val = btn.dataset.val;
+
+      document.querySelectorAll(`.screen-survey-opt[data-q="${q}"]`).forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      screenSurveyAnswers[q] = val;
+
+      const allAnswered = screenSurveyAnswers.q1 && screenSurveyAnswers.q2 && screenSurveyAnswers.q3;
+      screenSurveySubmitBtn.disabled = !allAnswered;
+    });
+  });
+
+  // Survey submit
+  if (screenSurveySubmitBtn) {
+    screenSurveySubmitBtn.addEventListener('click', async () => {
+      screenSurveySubmitBtn.disabled = true;
+      screenSurveySubmitBtn.textContent = '送信中...';
+
+      try {
+        await saveSurvey(screenSurveyAnswers);
+      } catch (e) {
+        console.error('Survey save error:', e);
+      }
+
+      markSurveyDone();
+      screenSurveyModal.style.display = 'none';
+      screenWifiModal.style.display = 'flex';
+
+      screenSurveySubmitBtn.textContent = '回答してWi-Fiを見る';
+      screenSurveySubmitBtn.disabled = true;
+    });
+  }
+
+  // Wi-Fi modal close
+  if (screenWifiCloseBtn) {
+    screenWifiCloseBtn.addEventListener('click', () => {
+      screenWifiModal.style.display = 'none';
+    });
+  }
+
+  // Wi-Fi modal background click to close
+  if (screenWifiModal) {
+    screenWifiModal.addEventListener('click', (e) => {
+      if (e.target === screenWifiModal) screenWifiModal.style.display = 'none';
+    });
+  }
+  if (screenSurveyModal) {
+    screenSurveyModal.addEventListener('click', (e) => {
+      if (e.target === screenSurveyModal) screenSurveyModal.style.display = 'none';
+    });
+  }
+
+  // Copy buttons in screen Wi-Fi modal
+  document.querySelectorAll('.screen-btn-copy').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const targetId = btn.dataset.target;
+      const targetEl = document.getElementById(targetId);
+      if (!targetEl) return;
+
+      const text = targetEl.textContent.trim();
+
+      try {
+        await navigator.clipboard.writeText(text);
+        btn.classList.add('copied');
+        btn.textContent = 'Done';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.textContent = 'Copy';
+        }, 1800);
+      } catch (e) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+
+        btn.classList.add('copied');
+        btn.textContent = 'Done';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.textContent = 'Copy';
+        }, 1800);
+      }
+    });
+  });
 
   // ============================================================
   // Init
   // ============================================================
+  log('=== screen.js initializing ===');
+  log('auth.currentUser:', auth.currentUser ? auth.currentUser.uid : 'null');
+
   startListening();
+  startCarouselListeners();
+  startCommentListener();
+  setupCommentInput();
+  updateCommentBarVisibility();
+  checkDataViaREST();
+
+  setTimeout(() => {
+    log('=== 5s health check ===');
+    log('avatarMap size:', avatarMap.size);
+    log('avatarMap keys:', [...avatarMap.keys()]);
+    checkDataViaREST();
+  }, 5000);
 
 })();
