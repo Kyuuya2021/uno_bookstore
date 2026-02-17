@@ -348,8 +348,10 @@
 
       slides.push({
         type: 'event',
+        id: ev.id,
         isToday,
         dateLabel,
+        date: ev.date,
         time: ev.time || '',
         title: ev.title,
         description: ev.description || '',
@@ -361,6 +363,7 @@
     activeBooks.slice(0, 5).forEach(bk => {
       slides.push({
         type: 'book',
+        id: bk.id,
         title: bk.title,
         author: bk.author || '',
         genre: bk.genre || '',
@@ -433,6 +436,18 @@
       });
     });
 
+    // Slide tap → detail modal (ignore if swiped)
+    carouselSlides.querySelectorAll('.carousel-slide').forEach(slide => {
+      slide.style.cursor = 'pointer';
+      slide.addEventListener('click', () => {
+        if (carouselSwiped) return;
+        const idx = parseInt(slide.dataset.index, 10);
+        if (idx >= 0 && idx < carouselItems.length) {
+          openDetailModal(carouselItems[idx]);
+        }
+      });
+    });
+
     carouselIndex = 0;
     resetCarouselTimer();
   }
@@ -463,7 +478,9 @@
     carouselTimer = setInterval(nextSlide, CAROUSEL_INTERVAL);
   }
 
-  // Swipe support for carousel
+  // Swipe support for carousel (sets flag to suppress tap)
+  let carouselSwiped = false;
+
   (function setupCarouselSwipe() {
     const target = document.getElementById('screen-info-area');
     if (!target) return;
@@ -477,6 +494,7 @@
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
       tracking = true;
+      carouselSwiped = false;
     }, { passive: true });
 
     target.addEventListener('touchend', (e) => {
@@ -490,6 +508,7 @@
 
       if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx)) return;
 
+      carouselSwiped = true;
       if (dx < 0) {
         nextSlide();
       } else {
@@ -1245,7 +1264,7 @@
   function showModal(modal) {
     if (!modal) return;
     modal.style.display = 'flex';
-    const card = modal.querySelector('.modal-card') || modal.querySelector('.wifi-mini-card');
+    const card = modal.querySelector('.modal-card') || modal.querySelector('.wifi-mini-card') || modal.querySelector('.detail-card');
     if (card) {
       card.style.animation = 'none';
       card.offsetHeight;
@@ -1256,6 +1275,151 @@
   function hideModal(modal) {
     if (!modal) return;
     modal.style.display = 'none';
+  }
+
+  // ============================================================
+  // Detail Modal (event / book)
+  // ============================================================
+  const detailModal = document.getElementById('detail-modal');
+  const detailCard = document.getElementById('detail-card');
+  let detailParticipantUnsub = null;
+
+  function openDetailModal(item) {
+    if (!detailModal || !detailCard) return;
+
+    // Clean up previous listener
+    if (detailParticipantUnsub) {
+      detailParticipantUnsub();
+      detailParticipantUnsub = null;
+    }
+
+    let html = '';
+
+    if (item.imageUrl) {
+      html += `<img class="detail-card-img" src="${escapeHTML(item.imageUrl)}" alt="">`;
+    }
+
+    html += '<div class="detail-card-body">';
+
+    if (item.type === 'event') {
+      const typeClass = item.isToday ? 'type-today' : 'type-event';
+      const typeLabel = item.isToday ? 'TODAY' : 'EVENT';
+
+      html += `<span class="detail-card-type ${typeClass}">${typeLabel}</span>`;
+      html += `<div class="detail-card-date">${escapeHTML(item.dateLabel)}${item.time ? ' ' + escapeHTML(item.time) : ''}</div>`;
+      html += `<div class="detail-card-title">${escapeHTML(item.title)}</div>`;
+      if (item.description) {
+        html += `<div class="detail-card-desc">${escapeHTML(item.description)}</div>`;
+      }
+
+      // Participation section
+      const user = auth.currentUser;
+      if (user && !user.isAnonymous) {
+        html += `
+          <div class="detail-card-actions">
+            <button class="detail-join-btn" id="detail-join-btn">参加する</button>
+            <span class="detail-join-count" id="detail-join-count"></span>
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="detail-card-actions">
+            <span class="detail-join-count" id="detail-join-count"></span>
+          </div>
+          <div class="detail-login-hint">Google ログインするとイベントに参加できます</div>
+        `;
+      }
+
+    } else {
+      html += '<span class="detail-card-type type-book">BOOK</span>';
+      html += `<div class="detail-card-title">${escapeHTML(item.title)}</div>`;
+      if (item.author) {
+        html += `<div class="detail-card-meta">${escapeHTML(item.author)}</div>`;
+      }
+      if (item.genre) {
+        html += `<div class="detail-card-meta" style="color:var(--color-primary);">${escapeHTML(item.genre)}</div>`;
+      }
+      if (item.comment) {
+        html += `<div class="detail-card-desc">${escapeHTML(item.comment)}</div>`;
+      }
+    }
+
+    html += '<button class="detail-close-btn" id="detail-close-btn">閉じる</button>';
+    html += '</div>';
+
+    detailCard.innerHTML = html;
+
+    // Show modal
+    showModal(detailModal);
+
+    // Close button
+    const closeBtn = document.getElementById('detail-close-btn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        hideModal(detailModal);
+        if (detailParticipantUnsub) {
+          detailParticipantUnsub();
+          detailParticipantUnsub = null;
+        }
+      });
+    }
+
+    // Event participation logic
+    if (item.type === 'event' && item.id) {
+      const joinBtn = document.getElementById('detail-join-btn');
+      const joinCount = document.getElementById('detail-join-count');
+
+      const ref = db.ref(`event_participants/${item.id}`);
+      const onValue = (snapshot) => {
+        const count = snapshot.numChildren();
+        const user = auth.currentUser;
+        const isJoined = user ? snapshot.hasChild(user.uid) : false;
+
+        if (joinBtn) {
+          joinBtn.textContent = isJoined ? '参加済み' : '参加する';
+          joinBtn.classList.toggle('joined', isJoined);
+        }
+        if (joinCount) {
+          joinCount.textContent = count > 0 ? `${count}人が参加予定` : '';
+        }
+      };
+
+      ref.on('value', onValue);
+      detailParticipantUnsub = () => ref.off('value', onValue);
+
+      if (joinBtn) {
+        joinBtn.addEventListener('click', async () => {
+          const user = auth.currentUser;
+          if (!user || user.isAnonymous) return;
+
+          joinBtn.disabled = true;
+          try {
+            const isJoined = joinBtn.classList.contains('joined');
+            if (isJoined) {
+              await leaveEvent(item.id);
+            } else {
+              await joinEvent(item.id);
+            }
+          } catch (e) {
+            console.error('Detail join/leave error:', e);
+          }
+          joinBtn.disabled = false;
+        });
+      }
+    }
+  }
+
+  // Detail modal background click to close
+  if (detailModal) {
+    detailModal.addEventListener('click', (e) => {
+      if (e.target === detailModal) {
+        hideModal(detailModal);
+        if (detailParticipantUnsub) {
+          detailParticipantUnsub();
+          detailParticipantUnsub = null;
+        }
+      }
+    });
   }
 
   // Wi-Fi FAB click

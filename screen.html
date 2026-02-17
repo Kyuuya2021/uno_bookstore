@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Uno Bookstore — Screen</title>
-  <link rel="stylesheet" href="css/style.css?v=18">
+  <link rel="stylesheet" href="css/style.css?v=19">
 </head>
 <body class="page-screen">
 
@@ -203,6 +203,11 @@
     </div>
   </div>
 
+  <!-- Detail Modal (event / book) -->
+  <div class="modal-overlay" id="detail-modal" style="display:none;">
+    <div class="detail-card" id="detail-card"></div>
+  </div>
+
   <!-- Comment FAB + Expandable Input -->
   <div class="comment-fab-wrap" id="comment-bar" style="display:none;">
     <button class="comment-fab" id="comment-fab" title="コメント">
@@ -228,8 +233,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
   
   <!-- App Scripts -->
-  <script src="js/svg-assets.js?v=18"></script>
-  <script src="js/firebase-config.js?v=18"></script>
-  <script src="js/screen.js?v=18"></script>
+  <script src="js/svg-assets.js?v=19"></script>
+  <script src="js/firebase-config.js?v=19"></script>
+  <script src="js/screen.js?v=19"></script>
 </body>
 </html>

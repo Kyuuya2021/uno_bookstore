@@ -849,6 +849,156 @@ button, input, textarea, select, a {
   margin: 0;
 }
 
+/* Detail Modal (event / book) */
+.detail-card {
+  background: rgba(20, 20, 30, 0.94);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 16px;
+  max-width: 420px;
+  width: calc(100% - 2rem);
+  max-height: 80vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  color: #FFF;
+  animation: modalPopIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 12px 48px rgba(0,0,0,0.4);
+}
+
+.detail-card-img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 16px 16px 0 0;
+  display: block;
+}
+
+.detail-card-body {
+  padding: 1.25rem;
+}
+
+.detail-card-type {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  margin-bottom: 0.6rem;
+}
+
+.detail-card-type.type-event {
+  background: var(--color-primary);
+  color: #FFF;
+}
+
+.detail-card-type.type-today {
+  background: #FF6B6B;
+  color: #FFF;
+}
+
+.detail-card-type.type-book {
+  background: #27AE60;
+  color: #FFF;
+}
+
+.detail-card-date {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.55);
+  margin-bottom: 0.35rem;
+}
+
+.detail-card-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.4;
+  margin-bottom: 0.6rem;
+}
+
+.detail-card-meta {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 0.4rem;
+}
+
+.detail-card-desc {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.75);
+  margin-bottom: 1rem;
+  white-space: pre-line;
+}
+
+.detail-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.detail-join-btn {
+  flex: 1;
+  padding: 0.7rem 1rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font);
+  background: var(--color-primary);
+  color: #FFF;
+}
+
+.detail-join-btn:hover {
+  background: var(--color-primary-dark);
+}
+
+.detail-join-btn.joined {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.7);
+}
+
+.detail-join-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.detail-join-count {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.4);
+  flex-shrink: 0;
+}
+
+.detail-login-hint {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.4);
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.detail-close-btn {
+  width: 100%;
+  padding: 0.65rem;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.5);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font);
+  margin-top: 0.75rem;
+}
+
+.detail-close-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: #FFF;
+}
+
 .wifi-big-icon {
   font-size: 1.1rem;
   font-weight: 700;
