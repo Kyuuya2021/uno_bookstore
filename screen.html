@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Uno Bookstore — Screen</title>
-  <link rel="stylesheet" href="css/style.css?v=16">
+  <link rel="stylesheet" href="css/style.css?v=17">
 </head>
 <body class="page-screen">
 
@@ -186,33 +186,20 @@
     </div>
   </div>
 
-  <!-- WiFi Info Modal -->
+  <!-- WiFi Info Modal (minimal) -->
   <div class="modal-overlay" id="screen-wifi-modal" style="display:none;">
-    <div class="modal-card wifi-card">
-      <div class="modal-header">
-        <span class="wifi-big-icon">Wi-Fi</span>
-        <h2>Wi-Fi に接続しよう</h2>
+    <div class="wifi-mini-card">
+      <div class="wifi-mini-row">
+        <span class="wifi-mini-label">SSID</span>
+        <code class="wifi-mini-value" id="screen-wifi-ssid">Uno-book-store</code>
+        <button class="wifi-mini-copy screen-btn-copy" data-target="screen-wifi-ssid">Copy</button>
       </div>
-      <div class="wifi-body">
-        <div class="wifi-row">
-          <span class="wifi-label">ネットワーク名</span>
-          <div class="wifi-value-row">
-            <code class="wifi-value" id="screen-wifi-ssid">Uno-book-store</code>
-            <button class="btn-copy screen-btn-copy" data-target="screen-wifi-ssid" title="コピー">Copy</button>
-          </div>
-        </div>
-        <div class="wifi-row">
-          <span class="wifi-label">パスワード</span>
-          <div class="wifi-value-row">
-            <code class="wifi-value" id="screen-wifi-pass">2NT8425E63</code>
-            <button class="btn-copy screen-btn-copy" data-target="screen-wifi-pass" title="コピー">Copy</button>
-          </div>
-        </div>
+      <div class="wifi-mini-divider"></div>
+      <div class="wifi-mini-row">
+        <span class="wifi-mini-label">PASS</span>
+        <code class="wifi-mini-value" id="screen-wifi-pass">2NT8425E63</code>
+        <button class="wifi-mini-copy screen-btn-copy" data-target="screen-wifi-pass">Copy</button>
       </div>
-      <div class="wifi-tip">
-        <p>スマホの設定 → Wi-Fi から接続してください</p>
-      </div>
-      <button class="btn-submit wifi-continue" id="screen-wifi-close">閉じる</button>
     </div>
   </div>
 
@@ -241,8 +228,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
   
   <!-- App Scripts -->
-  <script src="js/svg-assets.js?v=16"></script>
-  <script src="js/firebase-config.js?v=16"></script>
-  <script src="js/screen.js?v=16"></script>
+  <script src="js/svg-assets.js?v=17"></script>
+  <script src="js/firebase-config.js?v=17"></script>
+  <script src="js/screen.js?v=17"></script>
 </body>
 </html>

@@ -1204,7 +1204,7 @@
   function showModal(modal) {
     if (!modal) return;
     modal.style.display = 'flex';
-    const card = modal.querySelector('.modal-card');
+    const card = modal.querySelector('.modal-card') || modal.querySelector('.wifi-mini-card');
     if (card) {
       card.style.animation = 'none';
       card.offsetHeight;
