@@ -179,6 +179,24 @@
         }
       }
     },
+    "event_participants": {
+      ".read": "auth != null",
+      "$eventId": {
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.hasChildren(['joinedAt', 'nickname'])",
+          "joinedAt": {
+            ".validate": "newData.isNumber()"
+          },
+          "nickname": {
+            ".validate": "newData.isString() && newData.val().length <= 20"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
     "surveys": {
       ".read": "auth != null",
       ".write": "auth != null",

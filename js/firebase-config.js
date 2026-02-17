@@ -593,6 +593,74 @@ function listenToBooks(callback) {
 }
 
 // ============================================================
+// Event Participation (イベント参加登録)
+// ============================================================
+
+/**
+ * イベントに参加登録
+ * @param {string} eventId
+ * @returns {Promise<void>}
+ */
+async function joinEvent(eventId) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('ログインが必要です');
+
+  await db.ref(`event_participants/${eventId}/${user.uid}`).set({
+    joinedAt: firebase.database.ServerValue.TIMESTAMP,
+    nickname: user.displayName || 'Guest',
+  });
+}
+
+/**
+ * イベント参加をキャンセル
+ * @param {string} eventId
+ * @returns {Promise<void>}
+ */
+async function leaveEvent(eventId) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('ログインが必要です');
+
+  await db.ref(`event_participants/${eventId}/${user.uid}`).remove();
+}
+
+/**
+ * イベントの参加者数を取得
+ * @param {string} eventId
+ * @returns {Promise<number>}
+ */
+async function getEventParticipantCount(eventId) {
+  const snapshot = await db.ref(`event_participants/${eventId}`).once('value');
+  return snapshot.numChildren();
+}
+
+/**
+ * 現在のユーザーがイベントに参加済みか確認
+ * @param {string} eventId
+ * @returns {Promise<boolean>}
+ */
+async function isEventJoined(eventId) {
+  const user = auth.currentUser;
+  if (!user) return false;
+
+  const snapshot = await db.ref(`event_participants/${eventId}/${user.uid}`).once('value');
+  return snapshot.exists();
+}
+
+/**
+ * イベント参加者のリアルタイムリスナー
+ * @param {string} eventId
+ * @param {Function} callback - (count, isJoined) => void
+ */
+function listenToEventParticipants(eventId, callback) {
+  db.ref(`event_participants/${eventId}`).on('value', (snapshot) => {
+    const count = snapshot.numChildren();
+    const user = auth.currentUser;
+    const isJoined = user ? snapshot.hasChild(user.uid) : false;
+    callback(count, isJoined);
+  });
+}
+
+// ============================================================
 // Comments (コメント)
 // ============================================================
 

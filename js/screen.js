@@ -506,6 +506,7 @@
       cachedEvents = events;
       carouselItems = buildCarouselSlides(cachedEvents, cachedBooks);
       renderCarousel();
+      renderDrawerEvents();
     });
 
     listenToBooks((books) => {
@@ -513,6 +514,7 @@
       cachedBooks = books;
       carouselItems = buildCarouselSlides(cachedEvents, cachedBooks);
       renderCarousel();
+      renderDrawerBooks();
     });
   }
 
@@ -522,12 +524,19 @@
   const COMMENT_COOLDOWN = 10000;
   let lastCommentTime = 0;
 
+  // Large screen (TV) comment FAB elements
   const commentBar = document.getElementById('comment-bar');
   const commentFab = document.getElementById('comment-fab');
   const commentExpand = document.getElementById('comment-expand');
   const commentInput = document.getElementById('comment-input');
   const commentSendBtn = document.getElementById('comment-send-btn');
   const commentBarHint = document.getElementById('comment-bar-hint');
+
+  // Drawer comment elements (mobile)
+  const drawerCommentSection = document.getElementById('drawer-comment-section');
+  const drawerCommentInput = document.getElementById('drawer-comment-input');
+  const drawerCommentSend = document.getElementById('drawer-comment-send');
+  const drawerCommentHint = document.getElementById('drawer-comment-hint');
 
   function showBubbleOnAvatar(uid, text) {
     const entry = avatarMap.get(uid);
@@ -686,7 +695,347 @@
   }
 
   // ============================================================
-  // Google Account Linking Banner
+  // Sidebar Drawer System (mobile)
+  // ============================================================
+  const drawerToggle = document.getElementById('drawer-toggle');
+  const drawer = document.getElementById('drawer');
+  const drawerOverlay = document.getElementById('drawer-overlay');
+  const drawerClose = document.getElementById('drawer-close');
+  const drawerAvatar = document.getElementById('drawer-avatar');
+  const drawerNickname = document.getElementById('drawer-nickname');
+  const drawerAuthStatus = document.getElementById('drawer-auth-status');
+  const drawerBtnGoogle = document.getElementById('drawer-btn-google');
+  const drawerEventList = document.getElementById('drawer-event-list');
+  const drawerBookList = document.getElementById('drawer-book-list');
+  const drawerWifiBtn = document.getElementById('drawer-wifi-btn');
+  const drawerWifiContent = document.getElementById('drawer-wifi-content');
+
+  function openDrawer() {
+    if (!drawer) return;
+    drawer.classList.add('open');
+    drawerOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDrawer() {
+    if (!drawer) return;
+    drawer.classList.remove('open');
+    drawerOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  if (drawerToggle) drawerToggle.addEventListener('click', openDrawer);
+  if (drawerClose) drawerClose.addEventListener('click', closeDrawer);
+  if (drawerOverlay) drawerOverlay.addEventListener('click', closeDrawer);
+
+  function updateDrawerProfile() {
+    const user = auth.currentUser;
+
+    if (!user) {
+      if (drawerNickname) drawerNickname.textContent = 'ゲスト';
+      if (drawerAuthStatus) {
+        drawerAuthStatus.textContent = '未ログイン';
+        drawerAuthStatus.classList.remove('logged-in');
+      }
+      if (drawerBtnGoogle) drawerBtnGoogle.style.display = 'flex';
+      if (drawerAvatar) drawerAvatar.innerHTML = '';
+      return;
+    }
+
+    const userData = avatarMap.get(user.uid);
+    if (userData) {
+      if (drawerNickname) drawerNickname.textContent = userData.data.nickname || 'Guest';
+      if (drawerAvatar) {
+        drawerAvatar.innerHTML = createAvatarHTML(userData.data);
+      }
+    } else if (user.displayName) {
+      if (drawerNickname) drawerNickname.textContent = user.displayName;
+    }
+
+    if (user.isAnonymous) {
+      if (drawerAuthStatus) {
+        drawerAuthStatus.textContent = '匿名ユーザー';
+        drawerAuthStatus.classList.remove('logged-in');
+      }
+      if (drawerBtnGoogle) drawerBtnGoogle.style.display = 'flex';
+    } else {
+      if (drawerAuthStatus) {
+        drawerAuthStatus.textContent = 'Google ログイン済み';
+        drawerAuthStatus.classList.add('logged-in');
+      }
+      if (drawerBtnGoogle) drawerBtnGoogle.style.display = 'none';
+    }
+  }
+
+  // Drawer Google login
+  if (drawerBtnGoogle) {
+    drawerBtnGoogle.addEventListener('click', async () => {
+      drawerBtnGoogle.disabled = true;
+      drawerBtnGoogle.textContent = '連携中...';
+
+      try {
+        const user = await linkWithGoogle();
+        log('Google linked from drawer, uid:', user.uid);
+
+        const userData = avatarMap.get(user.uid);
+        if (userData) {
+          await saveProfile({
+            nickname: userData.data.nickname,
+            color: userData.data.color,
+            role: userData.data.role,
+          });
+        }
+
+        updateDrawerProfile();
+        updateCommentBarVisibility();
+        updateDrawerCommentVisibility();
+
+      } catch (error) {
+        console.error('Google link error:', error);
+        drawerBtnGoogle.disabled = false;
+
+        if (error.code === 'auth/popup-closed-by-user') {
+          drawerBtnGoogle.innerHTML = `
+            <svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align:middle;margin-right:0.3rem;">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Google でログイン`;
+          return;
+        }
+
+        drawerBtnGoogle.textContent = 'エラー - 再試行';
+      }
+    });
+  }
+
+  // Drawer Events
+  function renderDrawerEvents() {
+    if (!drawerEventList) return;
+
+    const todayStr = getTodayDateString();
+    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+    const activeEvents = (cachedEvents || []).filter(e => e.active && e.date >= todayStr);
+    activeEvents.sort((a, b) => a.date.localeCompare(b.date));
+
+    if (activeEvents.length === 0) {
+      drawerEventList.innerHTML = '<p class="drawer-empty">予定されているイベントはありません</p>';
+      return;
+    }
+
+    drawerEventList.innerHTML = activeEvents.slice(0, 8).map(ev => {
+      const d = new Date(ev.date + 'T00:00:00');
+      const dateLabel = `${d.getMonth() + 1}/${d.getDate()}(${dayNames[d.getDay()]})`;
+      const isToday = ev.date === todayStr;
+      const todayBadge = isToday ? '<span style="color:#FF6B6B;font-weight:600;margin-left:0.3rem;">TODAY</span>' : '';
+
+      return `
+        <div class="drawer-event-card" data-event-id="${ev.id}">
+          ${ev.imageUrl ? `<div class="drawer-card-thumb"><img src="${escapeHTML(ev.imageUrl)}" alt=""></div>` : ''}
+          <div class="drawer-card-info">
+            <div class="drawer-card-title">${escapeHTML(ev.title)}</div>
+            <div class="drawer-card-meta">${escapeHTML(dateLabel)}${ev.time ? ' ' + escapeHTML(ev.time) : ''}${todayBadge}</div>
+            <div class="drawer-card-actions">
+              <button class="drawer-event-join-btn" data-event-id="${ev.id}">参加する</button>
+              <span class="drawer-event-count" data-event-id="${ev.id}" style="font-size:0.68rem;color:rgba(255,255,255,0.4);margin-left:0.3rem;"></span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Setup participation listeners for each event
+    activeEvents.slice(0, 8).forEach(ev => {
+      const btn = drawerEventList.querySelector(`.drawer-event-join-btn[data-event-id="${ev.id}"]`);
+      const countEl = drawerEventList.querySelector(`.drawer-event-count[data-event-id="${ev.id}"]`);
+
+      listenToEventParticipants(ev.id, (count, isJoined) => {
+        if (btn) {
+          btn.textContent = isJoined ? '参加済み' : '参加する';
+          btn.classList.toggle('joined', isJoined);
+        }
+        if (countEl) {
+          countEl.textContent = count > 0 ? `${count}人参加` : '';
+        }
+      });
+
+      if (btn) {
+        btn.addEventListener('click', async () => {
+          const user = auth.currentUser;
+          if (!user || user.isAnonymous) {
+            btn.textContent = 'ログインが必要です';
+            setTimeout(() => { btn.textContent = '参加する'; }, 2000);
+            return;
+          }
+
+          btn.disabled = true;
+          try {
+            const joined = btn.classList.contains('joined');
+            if (joined) {
+              await leaveEvent(ev.id);
+            } else {
+              await joinEvent(ev.id);
+            }
+          } catch (e) {
+            console.error('Event join/leave error:', e);
+          }
+          btn.disabled = false;
+        });
+      }
+    });
+  }
+
+  // Drawer Books
+  function renderDrawerBooks() {
+    if (!drawerBookList) return;
+
+    const activeBooks = (cachedBooks || []).filter(b => b.active);
+
+    if (activeBooks.length === 0) {
+      drawerBookList.innerHTML = '<p class="drawer-empty">おすすめ情報はありません</p>';
+      return;
+    }
+
+    drawerBookList.innerHTML = activeBooks.slice(0, 8).map(bk => `
+      <div class="drawer-book-card">
+        ${bk.imageUrl ? `<div class="drawer-card-thumb"><img src="${escapeHTML(bk.imageUrl)}" alt=""></div>` : ''}
+        <div class="drawer-card-info">
+          <div class="drawer-card-title">${escapeHTML(bk.title)}</div>
+          ${bk.author ? `<div class="drawer-card-meta">${escapeHTML(bk.author)}</div>` : ''}
+          ${bk.genre ? `<div class="drawer-card-meta" style="color:var(--color-primary);">${escapeHTML(bk.genre)}</div>` : ''}
+          ${bk.comment ? `<div class="drawer-card-meta" style="margin-top:0.15rem;">${escapeHTML(bk.comment).substring(0, 60)}${bk.comment.length > 60 ? '...' : ''}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Drawer Wi-Fi
+  function setupDrawerWifi() {
+    if (!drawerWifiBtn || !drawerWifiContent) return;
+
+    function showDrawerWifiInfo() {
+      drawerWifiContent.innerHTML = `
+        <div class="drawer-wifi-info">
+          <div class="drawer-wifi-row">
+            <div>
+              <div class="drawer-wifi-label">ネットワーク名</div>
+              <div class="drawer-wifi-value">Uno-book-store</div>
+            </div>
+            <button class="drawer-wifi-copy" data-copy="Uno-book-store">Copy</button>
+          </div>
+          <div class="drawer-wifi-row">
+            <div>
+              <div class="drawer-wifi-label">パスワード</div>
+              <div class="drawer-wifi-value">2NT8425E63</div>
+            </div>
+            <button class="drawer-wifi-copy" data-copy="2NT8425E63">Copy</button>
+          </div>
+        </div>
+      `;
+
+      drawerWifiContent.querySelectorAll('.drawer-wifi-copy').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const val = btn.dataset.copy;
+          try {
+            await navigator.clipboard.writeText(val);
+          } catch (e) {
+            const ta = document.createElement('textarea');
+            ta.value = val;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+          }
+          btn.textContent = 'Done';
+          btn.classList.add('copied');
+          setTimeout(() => {
+            btn.textContent = 'Copy';
+            btn.classList.remove('copied');
+          }, 1800);
+        });
+      });
+    }
+
+    if (isSurveyDone()) {
+      showDrawerWifiInfo();
+    } else {
+      drawerWifiBtn.addEventListener('click', () => {
+        closeDrawer();
+        showModal(screenSurveyModal);
+      });
+    }
+  }
+
+  // Drawer Comment Input (mobile)
+  function updateDrawerCommentVisibility() {
+    if (!drawerCommentSection) return;
+    const user = auth.currentUser;
+    drawerCommentSection.style.display = (user && !user.isAnonymous) ? 'block' : 'none';
+  }
+
+  function setupDrawerComment() {
+    if (!drawerCommentInput || !drawerCommentSend) return;
+
+    drawerCommentInput.addEventListener('input', () => {
+      const hasText = drawerCommentInput.value.trim().length > 0;
+      const canSend = Date.now() - lastCommentTime >= COMMENT_COOLDOWN;
+      drawerCommentSend.disabled = !hasText || !canSend;
+    });
+
+    drawerCommentInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !drawerCommentSend.disabled) {
+        doSendDrawerComment();
+      }
+    });
+
+    drawerCommentSend.addEventListener('click', () => {
+      doSendDrawerComment();
+    });
+  }
+
+  async function doSendDrawerComment() {
+    const text = drawerCommentInput.value.trim();
+    if (!text) return;
+
+    const now = Date.now();
+    if (now - lastCommentTime < COMMENT_COOLDOWN) {
+      const remaining = Math.ceil((COMMENT_COOLDOWN - (now - lastCommentTime)) / 1000);
+      if (drawerCommentHint) drawerCommentHint.textContent = `${remaining}秒後に送信できます`;
+      return;
+    }
+
+    drawerCommentSend.disabled = true;
+    drawerCommentInput.disabled = true;
+
+    try {
+      const user = auth.currentUser;
+      const userData = avatarMap.get(user.uid);
+      const nickname = user.displayName || (userData ? userData.data.nickname : 'Guest');
+      const color = userData ? userData.data.color : 'blue';
+
+      await sendComment(text, nickname, color);
+
+      drawerCommentInput.value = '';
+      lastCommentTime = Date.now();
+      if (drawerCommentHint) drawerCommentHint.textContent = '送信しました';
+      setTimeout(() => {
+        if (drawerCommentHint) drawerCommentHint.textContent = '';
+      }, 2000);
+    } catch (e) {
+      console.error('Drawer comment error:', e);
+      if (drawerCommentHint) drawerCommentHint.textContent = 'エラー: ' + e.message;
+    } finally {
+      drawerCommentInput.disabled = false;
+      drawerCommentSend.disabled = true;
+    }
+  }
+
+  // ============================================================
+  // Google Account Linking Banner (large screen only)
   // ============================================================
   const LINK_DISMISSED_KEY = 'uno_link_dismissed';
   const linkBanner = document.getElementById('link-banner');
@@ -726,8 +1075,9 @@
         }
 
         linkBanner.style.display = 'none';
-        // Force show comment bar immediately (onAuthStateChanged may lag)
         if (commentBar) commentBar.style.display = 'block';
+        updateDrawerProfile();
+        updateDrawerCommentVisibility();
 
       } catch (error) {
         console.error('Google link error:', error);
@@ -774,8 +1124,10 @@
             role: userData.data.role,
           });
         }
-        linkBanner.style.display = 'none';
+        if (linkBanner) linkBanner.style.display = 'none';
         if (commentBar) commentBar.style.display = 'block';
+        updateDrawerProfile();
+        updateDrawerCommentVisibility();
       }
     } catch (e) {
       console.error('Redirect result error:', e);
@@ -795,6 +1147,8 @@
     }
     updateCommentBarVisibility();
     updateLinkBannerVisibility();
+    updateDrawerProfile();
+    updateDrawerCommentVisibility();
   });
 
   db.ref('.info/connected').on('value', (snap) => {
@@ -880,6 +1234,9 @@
       hideModal(screenSurveyModal);
       showModal(screenWifiModal);
 
+      // Refresh drawer wifi content (replace button with wifi info)
+      setupDrawerWifi();
+
       screenSurveySubmitBtn.textContent = '回答してWi-Fiを見る';
       screenSurveySubmitBtn.disabled = true;
     });
@@ -951,8 +1308,12 @@
   startCarouselListeners();
   startCommentListener();
   setupCommentInput();
+  setupDrawerComment();
+  setupDrawerWifi();
   updateCommentBarVisibility();
   updateLinkBannerVisibility();
+  updateDrawerProfile();
+  updateDrawerCommentVisibility();
 
   setTimeout(() => {
     log('=== 5s health check ===');
