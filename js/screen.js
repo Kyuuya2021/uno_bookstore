@@ -116,11 +116,18 @@
   }
 
   // ============================================================
-  // Entrance Sound Effect
+  // Entrance Sound Effect (single AudioContext reused)
   // ============================================================
+  let sharedAudioCtx = null;
+
   function playEntranceSound() {
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (!sharedAudioCtx) {
+        sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      const ctx = sharedAudioCtx;
+      if (ctx.state === 'suspended') ctx.resume();
+
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -263,6 +270,13 @@
       addedAt: Date.now(),
       wanderTimer: null,
     });
+
+    // Clear any floating bubble for this user now that they have an avatar
+    const existingFloating = floatingBubbleMap.get(uid);
+    if (existingFloating && existingFloating.parentNode) {
+      existingFloating.remove();
+      floatingBubbleMap.delete(uid);
+    }
 
     startWandering(uid);
     enforceAvatarLimit();
@@ -475,10 +489,6 @@
 
     query.on('value', (snapshot) => {
       log('EVENT value — total children:', snapshot.numChildren());
-    });
-
-    db.ref('users').on('value', () => {}, (error) => {
-      log('LISTENER ERROR', error.code, error.message);
     });
 
     return query;
@@ -716,7 +726,8 @@
         }
 
         linkBanner.style.display = 'none';
-        updateCommentBarVisibility();
+        // Force show comment bar immediately (onAuthStateChanged may lag)
+        if (commentBar) commentBar.style.display = 'block';
 
       } catch (error) {
         console.error('Google link error:', error);
@@ -763,16 +774,6 @@
   db.ref('.info/connected').on('value', (snap) => {
     log('CONNECTION:', snap.val() ? 'CONNECTED' : 'DISCONNECTED');
   });
-
-  async function checkDataViaREST() {
-    try {
-      const resp = await fetch(firebaseConfig.databaseURL + '/users.json?shallow=true');
-      const data = await resp.json();
-      log('REST CHECK — users in DB:', data ? Object.keys(data) : 'null/empty');
-    } catch (e) {
-      log('REST CHECK error:', e.message);
-    }
-  }
 
   // ============================================================
   // Wi-Fi FAB + Survey/WiFi Modals
@@ -925,13 +926,12 @@
   startCommentListener();
   setupCommentInput();
   updateCommentBarVisibility();
-  checkDataViaREST();
+  updateLinkBannerVisibility();
 
   setTimeout(() => {
     log('=== 5s health check ===');
     log('avatarMap size:', avatarMap.size);
     log('avatarMap keys:', [...avatarMap.keys()]);
-    checkDataViaREST();
   }, 5000);
 
 })();
