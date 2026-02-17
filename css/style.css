@@ -365,14 +365,14 @@ button, input, textarea, select, a {
   max-height: 90vh;
   overflow-y: auto;
   text-align: center;
-  animation: modalSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: modalPopIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   margin: auto;
   flex-shrink: 0;
 }
 
-@keyframes modalSlideUp {
-  from { transform: translateY(30px); opacity: 0; }
-  to   { transform: translateY(0); opacity: 1; }
+@keyframes modalPopIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
 }
 
 .modal-header h2 {
@@ -554,7 +554,7 @@ button, input, textarea, select, a {
   width: 100%;
   max-width: 360px;
   text-align: center;
-  animation: modalSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: modalPopIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .returning-greeting {
@@ -2498,7 +2498,7 @@ button, input, textarea, select, a {
   width: 100%;
   max-width: 520px;
   overflow: hidden;
-  animation: modalSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: modalPopIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .crop-modal-header {
