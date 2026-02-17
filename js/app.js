@@ -1,7 +1,7 @@
 /**
  * app.js — ユーザー入力画面のロジック
  * 
- * 匿名認証 → カラー/ロール/モード選択 → Firebase保存
+ * 匿名認証 → ニックネーム入力 → カラー/ロール/モード選択 → Firebase保存
  */
 
 (function () {
@@ -12,6 +12,7 @@
   // ============================================================
   const state = {
     uid: null,
+    nickname: '',
     color: null,
     role: null,
     mode: null,
@@ -20,12 +21,21 @@
   // ============================================================
   // DOM References
   // ============================================================
+  const nicknameInput = document.getElementById('nickname-input');
   const colorOptions = document.getElementById('color-options');
   const roleOptions = document.getElementById('role-options');
   const modeOptions = document.getElementById('mode-options');
   const btnCheckin = document.getElementById('btn-checkin');
   const statusBar = document.getElementById('status-bar');
   const previewEl = document.getElementById('avatar-preview');
+
+  // ============================================================
+  // Nickname Input
+  // ============================================================
+  nicknameInput.addEventListener('input', () => {
+    state.nickname = nicknameInput.value.trim();
+    validateForm();
+  });
 
   // ============================================================
   // Option Selection Logic
@@ -52,7 +62,7 @@
   // Form Validation
   // ============================================================
   function validateForm() {
-    const isValid = state.color && state.role && state.mode;
+    const isValid = state.nickname.length > 0 && state.color && state.role && state.mode;
     btnCheckin.disabled = !isValid;
     return isValid;
   }
@@ -68,7 +78,7 @@
 
     const html = createAvatarHTML({
       color: state.color,
-      role: state.role || 'manufacturing',
+      role: state.role || 'freelance',
       mode: state.mode || 'work',
     });
     previewEl.innerHTML = html;
@@ -82,10 +92,6 @@
     statusBar.className = 'status-bar show ' + type;
   }
 
-  function hideStatus() {
-    statusBar.className = 'status-bar';
-  }
-
   // ============================================================
   // Check-in Flow
   // ============================================================
@@ -96,28 +102,25 @@
     showStatus('認証中...', 'info');
 
     try {
-      // Anonymous Auth
       if (!state.uid) {
         state.uid = await signInAnonymously();
       }
 
       showStatus('データ保存中...', 'info');
 
-      // Save to Firebase
       await saveUserData({
         uid: state.uid,
+        nickname: state.nickname,
         color: state.color,
         role: state.role,
         mode: state.mode,
       });
 
-      // onDisconnect() は saveUserData 内で自動設定済み
-      // Firebase サーバー側で接続切断を検知し、データを自動削除する
-      showStatus('チェックイン完了！スクリーンにアバターが表示されます 🎉', 'success');
+      showStatus('チェックイン完了！スクリーンにアバターが表示されます', 'success');
 
     } catch (error) {
       console.error('Check-in error:', error);
-      showStatus('エラーが発生しました: ' + error.message, 'error');
+      showStatus('エラー: ' + error.message, 'error');
       btnCheckin.disabled = false;
     }
   });

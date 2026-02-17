@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Uno Bookstore — QR Check-in</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="page-qr">
+
+  <div class="qr-container">
+    <div class="qr-card">
+      <span class="logo-icon">📚</span>
+      <h1>Uno Bookstore</h1>
+      <p class="subtitle">QRコードをスキャンしてチェックイン</p>
+
+      <!-- QR Code Display -->
+      <div class="qr-display" id="qr-display">
+        <p class="qr-loading">QRコード生成中...</p>
+      </div>
+
+      <!-- URL Display -->
+      <div class="qr-url" id="qr-url"></div>
+
+      <!-- Instructions -->
+      <div class="qr-instructions">
+        <h3>使い方</h3>
+        <ol>
+          <li>スマホのカメラでQRコードを読み取る</li>
+          <li>チェックインページが開く</li>
+          <li>ニックネーム・カラー・ロール・モードを選択</li>
+          <li>「チェックイン」ボタンを押す</li>
+        </ol>
+      </div>
+
+      <!-- Custom URL -->
+      <div class="qr-custom">
+        <label>チェックインURL（編集可能）</label>
+        <input type="url" id="custom-url" class="nickname-input" placeholder="https://your-domain.com/index.html">
+        <button class="btn-submit btn-generate" id="btn-generate">QRコードを再生成</button>
+      </div>
+
+      <!-- Navigation -->
+      <div style="text-align:center; margin-top:1.5rem;">
+        <a href="index.html" class="nav-link">← チェックイン</a>
+        <span style="margin:0 0.5rem; color:var(--color-text-light);">|</span>
+        <a href="screen.html" class="nav-link">📺 スクリーン</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR Code Library -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+
+  <script>
+    (function () {
+      'use strict';
+
+      const qrDisplay = document.getElementById('qr-display');
+      const qrUrlEl = document.getElementById('qr-url');
+      const customUrlInput = document.getElementById('custom-url');
+      const btnGenerate = document.getElementById('btn-generate');
+
+      function getDefaultURL() {
+        const loc = window.location;
+        return loc.origin + loc.pathname.replace(/qr\.html$/, 'index.html');
+      }
+
+      function generateQR(url) {
+        qrDisplay.innerHTML = '';
+
+        const canvas = document.createElement('canvas');
+        qrDisplay.appendChild(canvas);
+
+        QRCode.toCanvas(canvas, url, {
+          width: 280,
+          margin: 2,
+          color: {
+            dark: '#2C3E50',
+            light: '#FFFFFF',
+          },
+          errorCorrectionLevel: 'M',
+        }, function (error) {
+          if (error) {
+            qrDisplay.innerHTML = '<p class="qr-loading">QRコード生成に失敗しました</p>';
+            console.error(error);
+          }
+        });
+
+        qrUrlEl.textContent = url;
+      }
+
+      // Initial generation
+      const defaultURL = getDefaultURL();
+      customUrlInput.value = defaultURL;
+      generateQR(defaultURL);
+
+      // Regenerate on button click
+      btnGenerate.addEventListener('click', () => {
+        const url = customUrlInput.value.trim();
+        if (url) {
+          generateQR(url);
+        }
+      });
+
+      // Also regenerate on Enter key
+      customUrlInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          btnGenerate.click();
+        }
+      });
+
+    })();
+  </script>
+</body>
+</html>

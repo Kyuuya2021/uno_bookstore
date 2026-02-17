@@ -5,12 +5,15 @@
       ".indexOn": ["timestamp"],
       "$uid": {
         ".write": "auth != null && auth.uid === $uid",
-        ".validate": "newData.hasChildren(['uid', 'timestamp', 'color', 'role', 'mode'])",
+        ".validate": "newData.hasChildren(['uid', 'timestamp', 'color', 'role', 'mode', 'nickname'])",
         "uid": {
           ".validate": "newData.val() === $uid"
         },
         "timestamp": {
           ".validate": "newData.val() === now"
+        },
+        "nickname": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
         },
         "color": {
           ".validate": "newData.val() === 'blue' || newData.val() === 'red' || newData.val() === 'green' || newData.val() === 'yellow' || newData.val() === 'purple' || newData.val() === 'orange'"
@@ -20,6 +23,35 @@
         },
         "mode": {
           ".validate": "newData.val() === 'work' || newData.val() === 'break' || newData.val() === 'meeting'"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "history": {
+      ".read": "auth != null",
+      ".indexOn": ["date", "checkinAt"],
+      ".write": "auth != null",
+      "$pushId": {
+        ".validate": "newData.hasChildren(['uid', 'nickname', 'color', 'role', 'checkinAt', 'date'])",
+        "uid": {
+          ".validate": "newData.isString()"
+        },
+        "nickname": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
+        },
+        "color": {
+          ".validate": "newData.val() === 'blue' || newData.val() === 'red' || newData.val() === 'green' || newData.val() === 'yellow' || newData.val() === 'purple' || newData.val() === 'orange'"
+        },
+        "role": {
+          ".validate": "newData.val() === 'freelance' || newData.val() === 'student' || newData.val() === 'designer' || newData.val() === 'engineer' || newData.val() === 'writer'"
+        },
+        "checkinAt": {
+          ".validate": "newData.val() === now"
+        },
+        "date": {
+          ".validate": "newData.isString()"
         },
         "$other": {
           ".validate": false
