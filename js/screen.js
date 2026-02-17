@@ -453,10 +453,51 @@
     goToSlide(carouselIndex + 1);
   }
 
+  function prevSlide() {
+    if (carouselItems.length === 0) return;
+    goToSlide((carouselIndex - 1 + carouselItems.length) % carouselItems.length);
+  }
+
   function resetCarouselTimer() {
     if (carouselTimer) clearInterval(carouselTimer);
     carouselTimer = setInterval(nextSlide, CAROUSEL_INTERVAL);
   }
+
+  // Swipe support for carousel
+  (function setupCarouselSwipe() {
+    const target = document.getElementById('screen-info-area');
+    if (!target) return;
+
+    let startX = 0;
+    let startY = 0;
+    let tracking = false;
+
+    target.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      tracking = true;
+    }, { passive: true });
+
+    target.addEventListener('touchend', (e) => {
+      if (!tracking) return;
+      tracking = false;
+
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const dx = endX - startX;
+      const dy = endY - startY;
+
+      if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx)) return;
+
+      if (dx < 0) {
+        nextSlide();
+      } else {
+        prevSlide();
+      }
+      resetCarouselTimer();
+    }, { passive: true });
+  })();
 
   // ============================================================
   // Firebase Realtime Listener
