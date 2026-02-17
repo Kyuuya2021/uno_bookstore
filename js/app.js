@@ -68,7 +68,7 @@
 
     const html = createAvatarHTML({
       color: state.color,
-      role: state.role || 'freelance',
+      role: state.role || 'manufacturing',
       mode: state.mode || 'work',
     });
     previewEl.innerHTML = html;
@@ -111,10 +111,9 @@
         mode: state.mode,
       });
 
+      // onDisconnect() は saveUserData 内で自動設定済み
+      // Firebase サーバー側で接続切断を検知し、データを自動削除する
       showStatus('チェックイン完了！スクリーンにアバターが表示されます 🎉', 'success');
-
-      // ページ離脱時にデータ削除（オプション）
-      setupBeforeUnload();
 
     } catch (error) {
       console.error('Check-in error:', error);
@@ -122,24 +121,6 @@
       btnCheckin.disabled = false;
     }
   });
-
-  // ============================================================
-  // Cleanup on Leave
-  // ============================================================
-  let unloadSetup = false;
-
-  function setupBeforeUnload() {
-    if (unloadSetup) return;
-    unloadSetup = true;
-
-    window.addEventListener('beforeunload', () => {
-      if (state.uid) {
-        // sendBeacon is more reliable for unload
-        const url = db.ref('users/' + state.uid).toString() + '.json';
-        navigator.sendBeacon && navigator.sendBeacon(url, '');
-      }
-    });
-  }
 
   // ============================================================
   // Init: Restore session if already signed in

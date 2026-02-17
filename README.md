@@ -53,24 +53,48 @@ const firebaseConfig = {
 };
 ```
 
-### 3. Realtime Database ルール
+### 3. Realtime Database ルール（必須）
 
-Firebase Console → Realtime Database → ルール に以下を設定:
+`database.rules.json` の内容を Firebase Console → Realtime Database → ルール に貼り付けてください。  
+このルールには以下のセキュリティが含まれます:
 
-```json
-{
-  "rules": {
-    "users": {
-      "$uid": {
-        ".read": true,
-        ".write": "auth != null && auth.uid === $uid"
-      }
-    }
-  }
-}
+- **認証必須**: `auth != null` — 匿名認証済みユーザーのみアクセス可
+- **自分のデータのみ書き込み可**: `auth.uid === $uid`
+- **データバリデーション**: color / role / mode の値をホワイトリストで制限
+- **timestamp 検証**: `newData.val() === now` でサーバー時刻のみ許可
+- **不明フィールド拒否**: `$other: { ".validate": false }` で想定外のキーをブロック
+- **インデックス**: `timestamp` にインデックスを設定しクエリを高速化
+
+### 4. セキュリティ強化（推奨）
+
+#### App Check の導入
+
+正規のアプリからのみ Firebase にアクセスを許可します:
+
+1. Firebase Console → **App Check** → **reCAPTCHA Enterprise** を選択
+2. reCAPTCHA のサイトキーを取得
+3. `index.html` / `screen.html` の Firebase SDK 読み込み後に以下を追加:
+
+```html
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
+<script>
+  const appCheck = firebase.appCheck();
+  appCheck.activate('YOUR_RECAPTCHA_SITE_KEY', true);
+</script>
 ```
 
-### 4. 起動
+4. Firebase Console → Realtime Database → App Check を **「必須」** に設定
+
+#### API キーのリファラー制限
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → **認証情報** → **API キー**
+2. 該当の Browser key を選択
+3. **アプリケーションの制限** → **HTTP リファラー** を選択
+4. 許可するドメインを追加:
+   - `your-domain.com/*`
+   - `localhost:*/*`（開発時のみ）
+
+### 5. 起動
 
 静的ファイルのみなので、任意のHTTPサーバーで配信できます:
 
