@@ -1334,6 +1334,150 @@ button, input, textarea, select, a {
   transform: scale(0.95);
 }
 
+/* --- Google Account Linking Banner --- */
+.link-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 120;
+  display: flex;
+  justify-content: center;
+  padding: 0 1rem;
+  pointer-events: none;
+  animation: linkBannerSlideUp 0.5s ease forwards;
+}
+
+@keyframes linkBannerSlideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.link-banner-inner {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(30, 30, 40, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-bottom: none;
+  border-radius: 1rem 1rem 0 0;
+  padding: 0.85rem 1.2rem;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.25);
+}
+
+.link-banner-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.link-banner-text strong {
+  font-size: 0.85rem;
+  color: #FFF;
+  white-space: nowrap;
+}
+
+.link-banner-text span {
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.6);
+  line-height: 1.35;
+}
+
+.link-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.link-banner-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.6rem;
+  background: #FFF;
+  color: #333;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.link-banner-btn:hover {
+  background: #f0f0f0;
+  transform: translateY(-1px);
+}
+
+.link-banner-btn:active {
+  transform: scale(0.97);
+}
+
+.link-banner-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.link-banner-dismiss {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.link-banner-dismiss:hover {
+  background: rgba(255,255,255,0.2);
+  color: #FFF;
+}
+
+@media (max-width: 480px) {
+  .link-banner-inner {
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .link-banner-text {
+    flex: 1 1 auto;
+  }
+
+  .link-banner-text strong {
+    font-size: 0.8rem;
+  }
+
+  .link-banner-text span {
+    font-size: 0.65rem;
+  }
+
+  .link-banner-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .link-banner-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 0.55rem 0.8rem;
+  }
+}
+
 /* --- Comment FAB + Expandable Input --- */
 
 .comment-fab-wrap {
