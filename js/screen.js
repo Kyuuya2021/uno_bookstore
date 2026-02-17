@@ -705,6 +705,7 @@
   const drawerNickname = document.getElementById('drawer-nickname');
   const drawerAuthStatus = document.getElementById('drawer-auth-status');
   const drawerBtnGoogle = document.getElementById('drawer-btn-google');
+  const drawerBtnLogout = document.getElementById('drawer-btn-logout');
   const drawerEventList = document.getElementById('drawer-event-list');
   const drawerBookList = document.getElementById('drawer-book-list');
   const drawerWifiBtn = document.getElementById('drawer-wifi-btn');
@@ -738,6 +739,7 @@
         drawerAuthStatus.classList.remove('logged-in');
       }
       if (drawerBtnGoogle) drawerBtnGoogle.style.display = 'flex';
+      if (drawerBtnLogout) drawerBtnLogout.style.display = 'none';
       if (drawerAvatar) drawerAvatar.innerHTML = '';
       return;
     }
@@ -758,12 +760,14 @@
         drawerAuthStatus.classList.remove('logged-in');
       }
       if (drawerBtnGoogle) drawerBtnGoogle.style.display = 'flex';
+      if (drawerBtnLogout) drawerBtnLogout.style.display = 'none';
     } else {
       if (drawerAuthStatus) {
         drawerAuthStatus.textContent = 'Google ログイン済み';
         drawerAuthStatus.classList.add('logged-in');
       }
       if (drawerBtnGoogle) drawerBtnGoogle.style.display = 'none';
+      if (drawerBtnLogout) drawerBtnLogout.style.display = 'flex';
     }
   }
 
@@ -808,6 +812,29 @@
 
         drawerBtnGoogle.textContent = 'エラー - 再試行';
       }
+    });
+  }
+
+  // Drawer Logout
+  if (drawerBtnLogout) {
+    drawerBtnLogout.addEventListener('click', async () => {
+      drawerBtnLogout.disabled = true;
+      drawerBtnLogout.textContent = 'ログアウト中...';
+
+      try {
+        await auth.signOut();
+        log('User signed out');
+        closeDrawer();
+        updateDrawerProfile();
+        updateCommentBarVisibility();
+        updateDrawerCommentVisibility();
+      } catch (e) {
+        console.error('Logout error:', e);
+        drawerBtnLogout.textContent = 'エラー - 再試行';
+      }
+
+      drawerBtnLogout.disabled = false;
+      drawerBtnLogout.textContent = 'ログアウト';
     });
   }
 

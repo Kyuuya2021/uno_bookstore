@@ -4,22 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Uno Bookstore — Screen</title>
-  <link rel="stylesheet" href="css/style.css?v=15">
+  <link rel="stylesheet" href="css/style.css?v=16">
 </head>
 <body class="page-screen">
 
   <!-- Header (top) -->
   <div class="screen-header">
+    <!-- Hamburger (left) -->
+    <button class="drawer-toggle" id="drawer-toggle" title="メニュー">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
     <h1>Uno Bookstore</h1>
     <div class="screen-stats">
       <span><strong id="stat-count">0</strong> 人</span>
       <span><strong id="stat-time"></strong></span>
       <span class="dom-limit-badge" id="dom-limit-badge">DOM上限到達</span>
     </div>
-    <!-- Hamburger (mobile only) -->
-    <button class="drawer-toggle" id="drawer-toggle" title="メニュー">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-    </button>
   </div>
 
   <!-- Info Carousel Area -->
@@ -85,6 +85,8 @@
           </button>
           <!-- Edit avatar -->
           <a href="index.html" class="drawer-btn drawer-btn-secondary">アバターを編集</a>
+          <!-- Logout (shown when logged in with Google) -->
+          <button class="drawer-btn drawer-btn-danger" id="drawer-btn-logout" style="display:none;">ログアウト</button>
         </div>
       </section>
 
@@ -136,8 +138,8 @@
     </div>
   </aside>
 
-  <!-- Wi-Fi FAB (bottom-left, large screen only) -->
-  <div class="wifi-fab-wrap wifi-fab-tv-only">
+  <!-- Wi-Fi FAB (bottom-left) -->
+  <div class="wifi-fab-wrap">
     <button class="wifi-fab" id="wifi-fab" title="Wi-Fi">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
     </button>
@@ -214,8 +216,8 @@
     </div>
   </div>
 
-  <!-- Comment FAB + Expandable Input (kept for large screens) -->
-  <div class="comment-fab-wrap comment-fab-tv-only" id="comment-bar" style="display:none;">
+  <!-- Comment FAB + Expandable Input -->
+  <div class="comment-fab-wrap" id="comment-bar" style="display:none;">
     <button class="comment-fab" id="comment-fab" title="コメント">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
     </button>
@@ -239,8 +241,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
   
   <!-- App Scripts -->
-  <script src="js/svg-assets.js?v=15"></script>
-  <script src="js/firebase-config.js?v=15"></script>
-  <script src="js/screen.js?v=15"></script>
+  <script src="js/svg-assets.js?v=16"></script>
+  <script src="js/firebase-config.js?v=16"></script>
+  <script src="js/screen.js?v=16"></script>
 </body>
 </html>

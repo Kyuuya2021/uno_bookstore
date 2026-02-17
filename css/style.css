@@ -2767,7 +2767,9 @@ button, input, textarea, select, a {
    ============================================================ */
 
 .drawer-toggle {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   color: #FFF;
@@ -2775,6 +2777,7 @@ button, input, textarea, select, a {
   padding: 0.3rem;
   border-radius: 6px;
   transition: background 0.2s;
+  flex-shrink: 0;
 }
 
 .drawer-toggle:hover {
@@ -2799,7 +2802,7 @@ button, input, textarea, select, a {
 .drawer {
   position: fixed;
   top: 0;
-  right: -320px;
+  left: -320px;
   width: 300px;
   max-width: 85vw;
   height: 100vh;
@@ -2810,13 +2813,13 @@ button, input, textarea, select, a {
   z-index: 510;
   display: flex;
   flex-direction: column;
-  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: #FFF;
   overflow: hidden;
 }
 
 .drawer.open {
-  right: 0;
+  left: 0;
 }
 
 .drawer-header {
@@ -2996,6 +2999,16 @@ button, input, textarea, select, a {
 .drawer-btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.drawer-btn-danger {
+  background: rgba(231, 76, 60, 0.12);
+  color: #E74C3C;
+  border: 1px solid rgba(231, 76, 60, 0.25);
+}
+
+.drawer-btn-danger:hover {
+  background: rgba(231, 76, 60, 0.2);
 }
 
 /* Drawer Comment */
@@ -3191,44 +3204,15 @@ button, input, textarea, select, a {
   color: #5CD85C;
 }
 
-/* Hide drawer on large screens, show on mobile */
-@media (min-width: 601px) {
-  .drawer-toggle,
-  .drawer,
-  .drawer-overlay {
-    display: none !important;
-  }
-}
-
 @media (max-width: 600px) {
-  .drawer-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* Hide large-screen-only FABs on mobile */
-  .wifi-fab-tv-only,
-  .comment-fab-tv-only {
-    display: none !important;
-  }
-
-  /* Hide link-banner on mobile (replaced by drawer) */
-  .link-banner {
-    display: none !important;
-  }
-
-  /* Adjust screen-header for hamburger */
+  /* Adjust screen-header for mobile */
   .screen-header {
-    flex-direction: row;
     gap: 0.5rem;
-    text-align: left;
     padding: 0.4rem 1rem;
     padding-top: calc(0.4rem + env(safe-area-inset-top));
   }
 
   .screen-header h1 {
-    flex: 1;
     font-size: 0.95rem;
   }
 

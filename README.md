@@ -1,4 +1,4 @@
-# Uno Bookstore — Avatar Check-in App
+おp# Uno Bookstore — Avatar Check-in App
 
 ブックストア / コワーキングスペース向けの **リアルタイム・アバター表示アプリ** です。  
 来店者がスマホでチェックインすると、共有スクリーンにアバターがリアルタイムで表示されます。
