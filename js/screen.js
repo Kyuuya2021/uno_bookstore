@@ -793,13 +793,29 @@
     localStorage.setItem(SURVEY_DONE_KEY, 'true');
   }
 
+  function showModal(modal) {
+    if (!modal) return;
+    modal.style.display = 'flex';
+    const card = modal.querySelector('.modal-card');
+    if (card) {
+      card.style.animation = 'none';
+      card.offsetHeight;
+      card.style.animation = '';
+    }
+  }
+
+  function hideModal(modal) {
+    if (!modal) return;
+    modal.style.display = 'none';
+  }
+
   // Wi-Fi FAB click
   if (wifiFab) {
     wifiFab.addEventListener('click', () => {
       if (isSurveyDone()) {
-        screenWifiModal.style.display = 'flex';
+        showModal(screenWifiModal);
       } else {
-        screenSurveyModal.style.display = 'flex';
+        showModal(screenSurveyModal);
       }
     });
   }
@@ -834,8 +850,8 @@
       }
 
       markSurveyDone();
-      screenSurveyModal.style.display = 'none';
-      screenWifiModal.style.display = 'flex';
+      hideModal(screenSurveyModal);
+      showModal(screenWifiModal);
 
       screenSurveySubmitBtn.textContent = '回答してWi-Fiを見る';
       screenSurveySubmitBtn.disabled = true;
@@ -845,19 +861,19 @@
   // Wi-Fi modal close
   if (screenWifiCloseBtn) {
     screenWifiCloseBtn.addEventListener('click', () => {
-      screenWifiModal.style.display = 'none';
+      hideModal(screenWifiModal);
     });
   }
 
-  // Wi-Fi modal background click to close
+  // Modal background click to close
   if (screenWifiModal) {
     screenWifiModal.addEventListener('click', (e) => {
-      if (e.target === screenWifiModal) screenWifiModal.style.display = 'none';
+      if (e.target === screenWifiModal) hideModal(screenWifiModal);
     });
   }
   if (screenSurveyModal) {
     screenSurveyModal.addEventListener('click', (e) => {
-      if (e.target === screenSurveyModal) screenSurveyModal.style.display = 'none';
+      if (e.target === screenSurveyModal) hideModal(screenSurveyModal);
     });
   }
 
