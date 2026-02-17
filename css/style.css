@@ -25,6 +25,7 @@
 
 html {
   font-size: 16px;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -33,6 +34,11 @@ body {
   color: var(--color-text);
   line-height: 1.6;
   min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, input, textarea, select, a {
+  touch-action: manipulation;
 }
 
 /* ============================================================
@@ -42,25 +48,29 @@ body {
 .page-user {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   min-height: 100vh;
-  padding: 2rem;
-  background: url('../images/screen-bg.png') center center / cover no-repeat fixed;
+  padding: 2rem 1rem;
   position: relative;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .page-user::before {
   content: '';
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.22);
-  z-index: 0;
-  pointer-events: none;
+  background: url('../images/screen-bg.png') center center / cover no-repeat;
+  z-index: -2;
 }
 
-.page-user > * {
-  position: relative;
-  z-index: 1;
+.page-user::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.22);
+  z-index: -1;
+  pointer-events: none;
 }
 
 .card {
@@ -73,6 +83,18 @@ body {
   padding: 2.5rem;
   width: 100%;
   max-width: 480px;
+  position: relative;
+  z-index: 1;
+  margin: auto 0;
+}
+
+@media (max-width: 480px) {
+  .page-user {
+    padding: 1rem 0.75rem;
+  }
+  .card {
+    padding: 1.5rem;
+  }
 }
 
 .card-header {
