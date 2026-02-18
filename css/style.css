@@ -1018,11 +1018,15 @@ button, input, textarea, select, a {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem 2rem;
+  padding: 1.5rem 2rem 2rem;
   overflow: hidden;
   position: relative;
   z-index: 20;
   transition: height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.screen-info-area.dragging {
+  transition: none;
 }
 
 .screen-info-area.expanded {
@@ -1035,32 +1039,41 @@ button, input, textarea, select, a {
   display: none;
 }
 
-/* Close button for expanded info area */
-.info-close-btn {
-  display: none;
+/* Drag handle at bottom of info area */
+.info-handle {
   position: absolute;
-  top: 0.6rem;
-  right: 0.6rem;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.7);
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 28px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  cursor: grab;
   z-index: 15;
-  transition: all 0.2s;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
-.info-close-btn:hover {
+.info-handle:active { cursor: grabbing; }
+
+.info-handle-bar {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
   background: rgba(255,255,255,0.25);
-  color: #FFF;
+  transition: background 0.2s, width 0.2s;
 }
 
-.screen-info-area.expanded .info-close-btn {
-  display: flex;
+.info-handle:hover .info-handle-bar,
+.info-handle.dragging .info-handle-bar {
+  background: rgba(255,255,255,0.5);
+  width: 44px;
+}
+
+.screen-info-area.expanded .info-handle-bar {
+  background: rgba(255,255,255,0.35);
 }
 
 /* Slide detail section (hidden in normal mode) */
@@ -1482,6 +1495,42 @@ button, input, textarea, select, a {
   background: rgba(255,255,255,0.2);
   font-size: 0.6rem;
   letter-spacing: 0.3px;
+}
+
+/* --- NPC Badge --- */
+
+.npc-avatar {
+  filter: drop-shadow(0 2px 8px rgba(59, 168, 180, 0.25));
+}
+
+.npc-badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.npc-badge-owner {
+  background: linear-gradient(135deg, #F1C40F, #F39C12);
+  color: #7D5A00;
+}
+
+.npc-badge-cat {
+  background: linear-gradient(135deg, #FFB6C1, #FF8FAB);
+  color: #8B2252;
+}
+
+.npc-badge-staff {
+  background: linear-gradient(135deg, #3BA8B4, #2E9AA5);
+  color: #FFF;
+}
+
+.npc-badge-fairy {
+  background: linear-gradient(135deg, #BB8FCE, #8E44AD);
+  color: #FFF;
 }
 
 /* --- Speech Bubble --- */
@@ -1908,7 +1957,7 @@ button, input, textarea, select, a {
 
   .screen-info-area {
     height: 33vh;
-    padding: 1rem;
+    padding: 1rem 1rem 1.5rem;
   }
 
   .screen-info-area.expanded {

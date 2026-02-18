@@ -262,6 +262,336 @@ const MODE_EFFECTS = {
 };
 
 // ============================================================
+// Brand Constants
+// ============================================================
+const BRAND_TEAL = '#3BA8B4';
+const BRAND_TEAL_DARK = '#2E9AA5';
+
+/**
+ * 宇野書店ロゴ（簡略版SVG）— エプロンに使用
+ * 白い有機的な波模様のマーク
+ */
+function unoLogoMark(cx, cy, size) {
+  const s = size / 30;
+  return `<g transform="translate(${cx}, ${cy}) scale(${s})">
+    <rect x="-15" y="-15" width="30" height="30" rx="6" fill="#FFF"/>
+    <path d="M-12,2 Q-8,-4 -4,1 Q0,5 4,0 Q8,-5 12,1" stroke="${BRAND_TEAL}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <circle cx="-10" cy="2" r="2.5" fill="#FFF"/>
+    <circle cx="-4" cy="-1" r="2" fill="#FFF"/>
+    <circle cx="4" cy="1" r="2.2" fill="#FFF"/>
+    <circle cx="10" cy="0" r="2.5" fill="#FFF"/>
+  </g>`;
+}
+
+/**
+ * スタッフ用エプロン（ティール + ロゴ）
+ */
+function staffApron() {
+  return `
+    <rect x="210" y="288" width="80" height="90" rx="8" fill="${BRAND_TEAL}"/>
+    <line x1="225" y1="288" x2="250" y2="274" stroke="${BRAND_TEAL_DARK}" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="275" y1="288" x2="250" y2="274" stroke="${BRAND_TEAL_DARK}" stroke-width="2.5" stroke-linecap="round"/>
+    <rect x="210" y="288" width="80" height="6" rx="3" fill="${BRAND_TEAL_DARK}"/>
+    ${unoLogoMark(250, 340, 28)}
+  `;
+}
+
+// ============================================================
+// NPC Avatars（常駐キャラクター）
+// ============================================================
+
+/**
+ * NPC: 宇野さん（店長）
+ * 黒髪ナチュラル・四角いメガネ・黒ジャケット + ティールエプロン
+ */
+function createNPCOwner() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${SVG_VIEWBOX}">
+    <ellipse cx="250" cy="440" rx="70" ry="14" fill="rgba(0,0,0,0.10)"/>
+    <!-- Body: black jacket -->
+    <rect x="195" y="260" width="110" height="132" rx="30" fill="#1A1A1A"/>
+    <!-- Jacket collar -->
+    <path d="M215,265 L250,280 L285,265" stroke="#2C2C2C" stroke-width="3" fill="none"/>
+    <!-- Apron -->
+    ${staffApron()}
+    <!-- Arms -->
+    <rect x="165" y="278" width="30" height="80" rx="15" fill="#1A1A1A" transform="rotate(-8, 180, 278)"/>
+    <rect x="305" y="278" width="30" height="80" rx="15" fill="#1A1A1A" transform="rotate(8, 320, 278)"/>
+    <!-- Legs -->
+    <rect x="215" y="378" width="28" height="55" rx="14" fill="#333"/>
+    <rect x="257" y="378" width="28" height="55" rx="14" fill="#333"/>
+    <!-- Shoes -->
+    <ellipse cx="229" cy="432" rx="18" ry="10" fill="#222"/>
+    <ellipse cx="271" cy="432" rx="18" ry="10" fill="#222"/>
+    <!-- Head -->
+    <circle cx="250" cy="200" r="75" fill="#FFD9B3"/>
+    <!-- Hair: black, natural/messy, medium length -->
+    <ellipse cx="250" cy="162" rx="82" ry="60" fill="#1A1A1A"/>
+    <ellipse cx="250" cy="148" rx="76" ry="44" fill="#252525"/>
+    <!-- Bangs falling over forehead -->
+    <path d="M190,175 Q200,148 218,168 Q228,155 240,170" fill="#1A1A1A"/>
+    <path d="M260,168 Q272,152 282,168 Q295,148 310,175" fill="#1A1A1A"/>
+    <path d="M235,160 Q245,145 255,162" fill="#252525"/>
+    <!-- Glasses (rectangular) -->
+    <rect x="208" y="200" width="34" height="24" rx="4" fill="none" stroke="#333" stroke-width="2.5"/>
+    <rect x="258" y="200" width="34" height="24" rx="4" fill="none" stroke="#333" stroke-width="2.5"/>
+    <line x1="242" y1="212" x2="258" y2="212" stroke="#333" stroke-width="2"/>
+    <line x1="208" y1="210" x2="195" y2="207" stroke="#333" stroke-width="2"/>
+    <line x1="292" y1="210" x2="305" y2="207" stroke="#333" stroke-width="2"/>
+    <!-- Eyes behind glasses -->
+    <circle cx="225" cy="212" r="6" fill="#2C3E50"/>
+    <circle cx="275" cy="212" r="6" fill="#2C3E50"/>
+    <circle cx="227" cy="210" r="2.5" fill="#FFF"/>
+    <circle cx="277" cy="210" r="2.5" fill="#FFF"/>
+    <!-- Eyebrows -->
+    <line x1="212" y1="195" x2="236" y2="193" stroke="#1A1A1A" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="264" y1="193" x2="288" y2="195" stroke="#1A1A1A" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Mouth: confident smile -->
+    <path d="M235 236 Q250 248 265 236" stroke="#C0392B" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <!-- Cheeks -->
+    <ellipse cx="210" cy="228" rx="10" ry="7" fill="rgba(255,150,150,0.25)"/>
+    <ellipse cx="290" cy="228" rx="10" ry="7" fill="rgba(255,150,150,0.25)"/>
+  </svg>`;
+}
+
+/**
+ * NPC: 看板猫（猫耳の人型キャラ）
+ * ティールエプロン、猫耳、しっぽ
+ */
+function createNPCCat() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${SVG_VIEWBOX}">
+    <ellipse cx="250" cy="440" rx="70" ry="14" fill="rgba(0,0,0,0.10)"/>
+    <!-- Tail -->
+    <path d="M300,370 Q340,350 345,310 Q348,290 335,280" stroke="#F5C06B" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <circle cx="335" cy="278" r="7" fill="#F5C06B"/>
+    <!-- Body -->
+    <rect x="200" y="262" width="100" height="128" rx="30" fill="#FFF8E7"/>
+    <!-- Apron -->
+    ${staffApron()}
+    <!-- Arms -->
+    <rect x="170" y="278" width="30" height="75" rx="15" fill="#FFF8E7" transform="rotate(-8, 185, 278)"/>
+    <rect x="300" y="278" width="30" height="75" rx="15" fill="#FFF8E7" transform="rotate(8, 315, 278)"/>
+    <!-- Paw pads -->
+    <circle cx="182" cy="355" r="8" fill="#FFB6C1"/>
+    <circle cx="318" cy="355" r="8" fill="#FFB6C1"/>
+    <!-- Legs -->
+    <rect x="215" y="376" width="28" height="55" rx="14" fill="#F5DEB3"/>
+    <rect x="257" y="376" width="28" height="55" rx="14" fill="#F5DEB3"/>
+    <!-- Shoes (little paws) -->
+    <ellipse cx="229" cy="432" rx="18" ry="10" fill="#F5DEB3"/>
+    <ellipse cx="271" cy="432" rx="18" ry="10" fill="#F5DEB3"/>
+    <circle cx="222" cy="434" r="3" fill="#FFB6C1"/>
+    <circle cx="236" cy="434" r="3" fill="#FFB6C1"/>
+    <circle cx="264" cy="434" r="3" fill="#FFB6C1"/>
+    <circle cx="278" cy="434" r="3" fill="#FFB6C1"/>
+    <!-- Head -->
+    <circle cx="250" cy="205" r="72" fill="#FFF8E7"/>
+    <!-- Cat ears -->
+    <polygon points="195,155 185,95 220,140" fill="#FFF8E7"/>
+    <polygon points="200,148 192,108 216,138" fill="#FFB6C1"/>
+    <polygon points="305,155 315,95 280,140" fill="#FFF8E7"/>
+    <polygon points="300,148 308,108 284,138" fill="#FFB6C1"/>
+    <!-- Inner ear tufts -->
+    <!-- Eyes (big, cat-like) -->
+    <ellipse cx="228" cy="210" rx="10" ry="11" fill="#2ECC71"/>
+    <ellipse cx="272" cy="210" rx="10" ry="11" fill="#2ECC71"/>
+    <ellipse cx="228" cy="212" rx="5" ry="9" fill="#1A1A1A"/>
+    <ellipse cx="272" cy="212" rx="5" ry="9" fill="#1A1A1A"/>
+    <circle cx="231" cy="207" r="3" fill="#FFF"/>
+    <circle cx="275" cy="207" r="3" fill="#FFF"/>
+    <!-- Nose -->
+    <polygon points="247,226 250,230 253,226" fill="#FFB6C1"/>
+    <!-- Mouth -->
+    <path d="M244,232 Q247,236 250,232" stroke="#C0392B" stroke-width="1.5" fill="none"/>
+    <path d="M250,232 Q253,236 256,232" stroke="#C0392B" stroke-width="1.5" fill="none"/>
+    <line x1="250" y1="230" x2="250" y2="234" stroke="#C0392B" stroke-width="1.5"/>
+    <!-- Whiskers -->
+    <line x1="200" y1="222" x2="230" y2="225" stroke="#BDC3C7" stroke-width="1.2"/>
+    <line x1="198" y1="230" x2="228" y2="230" stroke="#BDC3C7" stroke-width="1.2"/>
+    <line x1="270" y1="225" x2="300" y2="222" stroke="#BDC3C7" stroke-width="1.2"/>
+    <line x1="272" y1="230" x2="302" y2="230" stroke="#BDC3C7" stroke-width="1.2"/>
+    <!-- Cheeks -->
+    <ellipse cx="215" cy="228" rx="10" ry="7" fill="rgba(255,180,180,0.3)"/>
+    <ellipse cx="285" cy="228" rx="10" ry="7" fill="rgba(255,180,180,0.3)"/>
+  </svg>`;
+}
+
+/**
+ * NPC: バイトくん（元気な若者スタッフ）
+ * 短髪・ティールエプロン・本を持っている
+ */
+function createNPCPartTimer() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${SVG_VIEWBOX}">
+    <ellipse cx="250" cy="440" rx="70" ry="14" fill="rgba(0,0,0,0.10)"/>
+    <!-- Body: white shirt -->
+    <rect x="200" y="262" width="100" height="130" rx="30" fill="#FAFAFA"/>
+    <!-- Apron -->
+    ${staffApron()}
+    <!-- Arms -->
+    <rect x="170" y="278" width="30" height="78" rx="15" fill="#FAFAFA" transform="rotate(-12, 185, 278)"/>
+    <rect x="300" y="278" width="30" height="78" rx="15" fill="#FAFAFA" transform="rotate(8, 315, 278)"/>
+    <!-- Book in left hand -->
+    <g transform="translate(162, 355) rotate(-15)">
+      <rect x="-14" y="-18" width="28" height="36" rx="2" fill="#E74C3C"/>
+      <rect x="-11" y="-15" width="22" height="30" rx="1" fill="#FDEBD0"/>
+      <rect x="-14" y="-18" width="5" height="36" rx="1" fill="#C0392B"/>
+    </g>
+    <!-- Legs -->
+    <rect x="215" y="378" width="28" height="55" rx="14" fill="#5DADE2"/>
+    <rect x="257" y="378" width="28" height="55" rx="14" fill="#5DADE2"/>
+    <!-- Shoes: sneakers -->
+    <ellipse cx="229" cy="432" rx="18" ry="10" fill="#FFF"/>
+    <ellipse cx="271" cy="432" rx="18" ry="10" fill="#FFF"/>
+    <ellipse cx="229" cy="434" rx="12" ry="4" fill="#3498DB"/>
+    <ellipse cx="271" cy="434" rx="12" ry="4" fill="#3498DB"/>
+    <!-- Head -->
+    <circle cx="250" cy="200" r="72" fill="#FFD9B3"/>
+    <!-- Hair: short, slightly spiky, brown -->
+    <ellipse cx="250" cy="165" rx="75" ry="52" fill="#6B4226"/>
+    <ellipse cx="250" cy="152" rx="68" ry="38" fill="#7D5234"/>
+    <!-- Spiky front -->
+    <path d="M210,155 L218,135 L230,158" fill="#6B4226"/>
+    <path d="M235,150 L245,128 L255,150" fill="#6B4226"/>
+    <path d="M260,152 L270,132 L282,158" fill="#6B4226"/>
+    <!-- Eyes: bright, energetic -->
+    <circle cx="228" cy="210" r="9" fill="#2C3E50"/>
+    <circle cx="272" cy="210" r="9" fill="#2C3E50"/>
+    <circle cx="231" cy="207" r="3.5" fill="#FFF"/>
+    <circle cx="275" cy="207" r="3.5" fill="#FFF"/>
+    <circle cx="226" cy="213" r="1.5" fill="#FFF"/>
+    <circle cx="270" cy="213" r="1.5" fill="#FFF"/>
+    <!-- Eyebrows (energetic, slightly raised) -->
+    <path d="M214,194 Q224,188 238,192" stroke="#5D3A1A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M262,192 Q276,188 286,194" stroke="#5D3A1A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <!-- Mouth: big grin -->
+    <path d="M232 232 Q250 252 268 232" stroke="#C0392B" stroke-width="2.5" fill="rgba(255,255,255,0.4)" stroke-linecap="round"/>
+    <!-- Cheeks -->
+    <ellipse cx="212" cy="226" rx="12" ry="8" fill="rgba(255,150,150,0.35)"/>
+    <ellipse cx="288" cy="226" rx="12" ry="8" fill="rgba(255,150,150,0.35)"/>
+  </svg>`;
+}
+
+/**
+ * NPC: 本の妖精（ファンタジーキャラ）
+ * 翼・キラキラ・本モチーフの帽子
+ */
+function createNPCFairy() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${SVG_VIEWBOX}">
+    <ellipse cx="250" cy="440" rx="55" ry="10" fill="rgba(0,0,0,0.08)"/>
+    <!-- Wings -->
+    <g opacity="0.4">
+      <ellipse cx="185" cy="290" rx="45" ry="70" fill="#AED6F1" transform="rotate(15, 185, 290)"/>
+      <ellipse cx="315" cy="290" rx="45" ry="70" fill="#AED6F1" transform="rotate(-15, 315, 290)"/>
+      <ellipse cx="175" cy="275" rx="25" ry="45" fill="#D6EAF8" transform="rotate(20, 175, 275)"/>
+      <ellipse cx="325" cy="275" rx="25" ry="45" fill="#D6EAF8" transform="rotate(-20, 325, 275)"/>
+    </g>
+    <!-- Sparkles around wings -->
+    <g opacity="0.6">
+      <polygon points="155,240 157,236 159,240 163,242 159,244 157,248 155,244 151,242" fill="#F1C40F"/>
+      <polygon points="340,230 342,226 344,230 348,232 344,234 342,238 340,234 336,232" fill="#F1C40F"/>
+      <polygon points="160,320 161,317 163,320 166,321 163,323 161,326 160,323 157,321" fill="#F39C12"/>
+      <polygon points="345,310 346,307 348,310 351,311 348,313 346,316 345,313 342,311" fill="#F39C12"/>
+    </g>
+    <!-- Body: magical robe -->
+    <path d="M210,268 L200,400 Q250,415 300,400 L290,268 Q250,255 210,268Z" fill="#8E44AD"/>
+    <path d="M215,270 L208,395 Q250,408 292,395 L285,270 Q250,260 215,270Z" fill="#A569BD"/>
+    <!-- Star clasp -->
+    <polygon points="250,275 253,268 260,268 255,263 257,256 250,260 243,256 245,263 240,268 247,268" fill="#F1C40F"/>
+    <!-- Arms (slender) -->
+    <rect x="178" y="280" width="24" height="70" rx="12" fill="#A569BD" transform="rotate(-10, 190, 280)"/>
+    <rect x="298" y="280" width="24" height="70" rx="12" fill="#A569BD" transform="rotate(10, 310, 280)"/>
+    <!-- Hands holding a tiny book -->
+    <g transform="translate(250, 358)">
+      <circle cx="-30" cy="0" r="10" fill="#FFD9B3"/>
+      <circle cx="30" cy="0" r="10" fill="#FFD9B3"/>
+      <rect x="-12" y="-10" width="24" height="18" rx="2" fill="#2ECC71"/>
+      <rect x="-9" y="-7" width="18" height="12" rx="1" fill="#FDEBD0"/>
+      <rect x="-12" y="-10" width="4" height="18" rx="1" fill="#1E8449"/>
+      <polygon points="4,-10 8,-10 8,-5 6,-7 4,-5" fill="#F1C40F"/>
+    </g>
+    <!-- Legs (hidden by robe, just shoes peek out) -->
+    <ellipse cx="235" cy="408" rx="14" ry="8" fill="#7D3C98"/>
+    <ellipse cx="265" cy="408" rx="14" ry="8" fill="#7D3C98"/>
+    <!-- Head -->
+    <circle cx="250" cy="200" r="65" fill="#FFD9B3"/>
+    <!-- Hair: flowing lavender -->
+    <ellipse cx="250" cy="170" rx="70" ry="50" fill="#D2B4DE"/>
+    <ellipse cx="250" cy="158" rx="64" ry="38" fill="#E8DAEF"/>
+    <!-- Flowing side hair -->
+    <path d="M185,180 Q178,220 185,260 Q188,250 190,230 Q186,210 190,185Z" fill="#D2B4DE"/>
+    <path d="M315,180 Q322,220 315,260 Q312,250 310,230 Q314,210 310,185Z" fill="#D2B4DE"/>
+    <!-- Book hat / page crown -->
+    <g transform="translate(250, 138)">
+      <rect x="-22" y="-18" width="44" height="28" rx="3" fill="#2ECC71"/>
+      <rect x="-18" y="-14" width="36" height="20" rx="2" fill="#FDEBD0"/>
+      <line x1="-12" y1="-8" x2="12" y2="-8" stroke="#BDC3C7" stroke-width="1"/>
+      <line x1="-12" y1="-2" x2="8" y2="-2" stroke="#BDC3C7" stroke-width="1"/>
+      <line x1="-12" y1="4" x2="10" y2="4" stroke="#BDC3C7" stroke-width="1"/>
+    </g>
+    <!-- Eyes: big sparkly -->
+    <ellipse cx="232" cy="205" rx="10" ry="11" fill="#8E44AD"/>
+    <ellipse cx="268" cy="205" rx="10" ry="11" fill="#8E44AD"/>
+    <circle cx="235" cy="202" r="4" fill="#FFF"/>
+    <circle cx="271" cy="202" r="4" fill="#FFF"/>
+    <circle cx="230" cy="208" r="2" fill="#FFF" opacity="0.6"/>
+    <circle cx="266" cy="208" r="2" fill="#FFF" opacity="0.6"/>
+    <!-- Blush -->
+    <ellipse cx="218" cy="220" rx="10" ry="6" fill="rgba(255,150,200,0.4)"/>
+    <ellipse cx="282" cy="220" rx="10" ry="6" fill="rgba(255,150,200,0.4)"/>
+    <!-- Mouth: gentle smile -->
+    <path d="M242 225 Q250 234 258 225" stroke="#D35400" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <!-- Floating sparkles -->
+    <g opacity="0.5">
+      <polygon points="310,155 312,150 314,155 319,157 314,159 312,164 310,159 305,157" fill="#F1C40F">
+        <animate attributeName="opacity" values="0.3;0.8;0.3" dur="2s" repeatCount="indefinite"/>
+      </polygon>
+      <polygon points="185,165 187,161 189,165 193,167 189,169 187,173 185,169 181,167" fill="#F39C12">
+        <animate attributeName="opacity" values="0.5;1;0.5" dur="2.5s" repeatCount="indefinite"/>
+      </polygon>
+    </g>
+  </svg>`;
+}
+
+// ============================================================
+// NPC Definitions（常駐キャラクター設定）
+// ============================================================
+
+const NPC_CHARACTERS = [
+  {
+    id: 'npc_owner',
+    nickname: '宇野さん（店長）',
+    createSVG: createNPCOwner,
+    badge: 'owner',
+  },
+  {
+    id: 'npc_cat',
+    nickname: 'たま（看板猫）',
+    createSVG: createNPCCat,
+    badge: 'cat',
+  },
+  {
+    id: 'npc_parttimer',
+    nickname: 'バイトくん',
+    createSVG: createNPCPartTimer,
+    badge: 'staff',
+  },
+  {
+    id: 'npc_fairy',
+    nickname: '本の妖精',
+    createSVG: createNPCFairy,
+    badge: 'fairy',
+  },
+];
+
+/**
+ * NPCアバターのHTMLを生成（3層ではなく1層の完全SVG）
+ */
+function createNPCAvatarHTML(npcType) {
+  const npc = NPC_CHARACTERS.find(n => n.id === npcType);
+  if (!npc) return '';
+  return `<div class="avatar-layer layer-base" style="z-index:1;">${npc.createSVG()}</div>`;
+}
+
+// ============================================================
 // Public API
 // ============================================================
 
@@ -295,5 +625,5 @@ const AVATAR_OPTIONS = {
 
 // Export for module usage or global
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { createAvatarHTML, AVATAR_OPTIONS, COLOR_PALETTE };
+  module.exports = { createAvatarHTML, createNPCAvatarHTML, NPC_CHARACTERS, AVATAR_OPTIONS, COLOR_PALETTE };
 }

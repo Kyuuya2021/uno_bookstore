@@ -1287,7 +1287,7 @@
   // ============================================================
   // Detail: inline expansion of info area
   // ============================================================
-  const infoCloseBtn = document.getElementById('info-close-btn');
+  const infoHandle = document.getElementById('info-handle');
 
   function buildSlideDetail(item) {
     let html = '';
@@ -1414,13 +1414,127 @@
     resetCarouselTimer();
   }
 
+  function forceExpand() {
+    detailExpanded = false;
+    expandInfoArea();
+  }
+
+  function forceCollapse() {
+    detailExpanded = true;
+    collapseInfoArea();
+  }
+
   function openDetailModal(item) {
     expandInfoArea();
   }
 
-  if (infoCloseBtn) {
-    infoCloseBtn.addEventListener('click', collapseInfoArea);
-  }
+  // ============================================================
+  // Drag handle: tap to toggle + drag to resize + snap
+  // ============================================================
+  (function setupDragHandle() {
+    if (!infoHandle || !infoArea) return;
+
+    const isMobile = () => window.innerWidth <= 600;
+    const collapsedRatio = () => isMobile() ? 0.33 : 0.50;
+    const expandedRatio  = () => isMobile() ? 0.85 : 0.80;
+    const snapThreshold  = () => (collapsedRatio() + expandedRatio()) / 2;
+
+    let startY = 0;
+    let startH = 0;
+    let dragged = false;
+    let lastY = 0;
+    let lastTime = 0;
+    let velocity = 0;
+
+    function onStart(clientY) {
+      startY = clientY;
+      startH = infoArea.getBoundingClientRect().height;
+      dragged = false;
+      lastY = clientY;
+      lastTime = Date.now();
+      velocity = 0;
+      infoArea.classList.add('dragging');
+      infoHandle.classList.add('dragging');
+    }
+
+    function onMove(clientY) {
+      const dy = clientY - startY;
+      if (Math.abs(dy) > 4) dragged = true;
+      if (!dragged) return;
+
+      const vh = window.innerHeight;
+      const minH = vh * collapsedRatio() * 0.8;
+      const maxH = vh * expandedRatio();
+      const newH = Math.min(maxH, Math.max(minH, startH + dy));
+      infoArea.style.height = newH + 'px';
+
+      const now = Date.now();
+      const dt = now - lastTime;
+      if (dt > 0) {
+        velocity = (clientY - lastY) / dt;
+      }
+      lastY = clientY;
+      lastTime = now;
+    }
+
+    function onEnd() {
+      infoHandle.classList.remove('dragging');
+
+      if (!dragged) {
+        infoArea.classList.remove('dragging');
+        infoArea.style.height = '';
+        if (detailExpanded) {
+          collapseInfoArea();
+        } else {
+          expandInfoArea();
+        }
+        return;
+      }
+
+      const vh = window.innerHeight;
+      const currentH = infoArea.getBoundingClientRect().height;
+      const ratio = currentH / vh;
+
+      const flickExpand = velocity > 0.4;
+      const flickCollapse = velocity < -0.4;
+
+      infoArea.classList.remove('dragging');
+      infoArea.style.height = '';
+
+      if (flickExpand || (!flickCollapse && ratio > snapThreshold())) {
+        forceExpand();
+      } else {
+        forceCollapse();
+      }
+    }
+
+    infoHandle.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      onStart(e.touches[0].clientY);
+    }, { passive: true });
+
+    infoHandle.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      onMove(e.touches[0].clientY);
+    }, { passive: false });
+
+    infoHandle.addEventListener('touchend', () => onEnd(), { passive: true });
+    infoHandle.addEventListener('touchcancel', () => onEnd(), { passive: true });
+
+    infoHandle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      onStart(e.clientY);
+
+      const moveHandler = (ev) => onMove(ev.clientY);
+      const upHandler = () => {
+        onEnd();
+        document.removeEventListener('mousemove', moveHandler);
+        document.removeEventListener('mouseup', upHandler);
+      };
+      document.addEventListener('mousemove', moveHandler);
+      document.addEventListener('mouseup', upHandler);
+    });
+  })();
 
   // Wi-Fi FAB click
   if (wifiFab) {
@@ -1531,11 +1645,99 @@
   });
 
   // ============================================================
+  // NPC Characters（常駐キャラクター）
+  // NPCはavatarMapとは別管理。DOM上限カウントに含めない。
+  // ============================================================
+  const npcMap = new Map();
+
+  function renderNPCs() {
+    if (typeof NPC_CHARACTERS === 'undefined') return;
+
+    NPC_CHARACTERS.forEach((npc) => {
+      if (npcMap.has(npc.id)) return;
+
+      const pos = randomPosition();
+
+      const container = document.createElement('div');
+      container.className = 'avatar-container npc-avatar idle';
+      container.dataset.npcId = npc.id;
+      container.style.left = pos.x + 'px';
+      container.style.top = pos.y + 'px';
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'avatar-wrapper';
+      wrapper.innerHTML = createNPCAvatarHTML(npc.id);
+
+      const label = document.createElement('div');
+      label.className = 'avatar-label';
+      label.innerHTML = `
+        <span class="avatar-nickname">${escapeHTML(npc.nickname)}</span>
+        <span class="npc-badge npc-badge-${npc.badge}">STAFF</span>
+      `;
+
+      container.appendChild(wrapper);
+      container.appendChild(label);
+      walkZone.appendChild(container);
+
+      const npcEntry = {
+        element: container,
+        wanderTimer: null,
+      };
+      npcMap.set(npc.id, npcEntry);
+
+      // NPCも歩き回る（avatarMapに入れず独自管理）
+      startNPCWandering(npc.id);
+    });
+
+    log('NPCs rendered:', npcMap.size);
+  }
+
+  function startNPCWandering(npcId) {
+    const entry = npcMap.get(npcId);
+    if (!entry) return;
+
+    const wander = () => {
+      const currentEntry = npcMap.get(npcId);
+      if (!currentEntry) return;
+
+      const el = currentEntry.element;
+      const bounds = getWalkBounds();
+      if (bounds.width === 0) return;
+
+      const targetX = Math.random() * bounds.maxX;
+      const targetY = Math.random() * bounds.maxY;
+
+      const currentX = parseFloat(el.style.left) || 0;
+      el.classList.toggle('facing-left', targetX < currentX);
+
+      el.classList.remove('idle');
+      el.classList.add('walking');
+
+      el.style.left = targetX + 'px';
+      el.style.top = targetY + 'px';
+
+      const moveDuration = 8000;
+      setTimeout(() => {
+        if (!npcMap.has(npcId)) return;
+        el.classList.remove('walking');
+        el.classList.add('idle');
+      }, moveDuration);
+
+      const nextDelay = WANDER_MIN_DELAY + Math.random() * (WANDER_MAX_DELAY - WANDER_MIN_DELAY);
+      currentEntry.wanderTimer = setTimeout(wander, moveDuration + nextDelay);
+    };
+
+    const initialDelay = 500 + Math.random() * 3000;
+    entry.wanderTimer = setTimeout(wander, initialDelay);
+  }
+
+  // ============================================================
   // Init
   // ============================================================
   log('=== screen.js initializing ===');
   log('auth.currentUser:', auth.currentUser ? auth.currentUser.uid : 'null');
 
+  renderNPCs();
   startListening();
   startCarouselListeners();
   startCommentListener();
@@ -1550,6 +1752,7 @@
   setTimeout(() => {
     log('=== 5s health check ===');
     log('avatarMap size:', avatarMap.size);
+    log('npcMap size:', npcMap.size);
     log('avatarMap keys:', [...avatarMap.keys()]);
   }, 5000);
 
