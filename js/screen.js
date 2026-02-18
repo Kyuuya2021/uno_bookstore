@@ -46,6 +46,9 @@
   let carouselItems = [];
   let carouselIndex = 0;
   let carouselTimer = null;
+  let onSlideChanged = null;
+  let detailExpanded = false;
+  let dpParticipantUnsub = null;
 
   // ============================================================
   // Clock
@@ -376,6 +379,8 @@
   }
 
   function renderCarousel() {
+    if (detailExpanded) collapseInfoArea();
+
     if (carouselItems.length === 0) {
       infoArea.classList.add('hidden');
       walkArea.classList.add('fullscreen');
@@ -457,10 +462,12 @@
     const dots = carouselDots.querySelectorAll('.carousel-dot');
     if (slides.length === 0) return;
 
-    carouselIndex = index % slides.length;
+    carouselIndex = ((index % slides.length) + slides.length) % slides.length;
 
     slides.forEach((s, i) => s.classList.toggle('active', i === carouselIndex));
     dots.forEach((d, i) => d.classList.toggle('active', i === carouselIndex));
+
+    if (onSlideChanged) onSlideChanged();
   }
 
   function nextSlide() {
@@ -514,7 +521,7 @@
       } else {
         prevSlide();
       }
-      resetCarouselTimer();
+      if (!detailExpanded) resetCarouselTimer();
     }, { passive: true });
   })();
 
@@ -1278,209 +1285,142 @@
   }
 
   // ============================================================
-  // Detail Popup (floating card with swipe)
+  // Detail: inline expansion of info area
   // ============================================================
-  const detailOverlay = document.getElementById('detail-overlay');
-  const detailPopup = document.getElementById('detail-popup');
-  const detailContent = document.getElementById('detail-popup-content');
-  const detailDots = document.getElementById('detail-popup-dots');
-  const detailCloseBtn = document.getElementById('detail-popup-close');
+  const infoCloseBtn = document.getElementById('info-close-btn');
 
-  let dpIndex = 0;
-  let dpParticipantUnsub = null;
-
-  function buildDetailHTML(item) {
+  function buildSlideDetail(item) {
     let html = '';
 
-    if (item.imageUrl) {
-      html += `<img class="dp-img" src="${escapeHTML(item.imageUrl)}" alt="">`;
-    }
-
     if (item.type === 'event') {
-      const tc = item.isToday ? 't-today' : 't-event';
-      const tl = item.isToday ? 'TODAY' : 'EVENT';
-
-      html += `<span class="dp-type ${tc}">${tl}</span>`;
-      html += `<div class="dp-date">${escapeHTML(item.dateLabel)}${item.time ? ' ' + escapeHTML(item.time) : ''}</div>`;
-      html += `<div class="dp-title">${escapeHTML(item.title)}</div>`;
       if (item.description) {
-        html += `<div class="dp-desc">${escapeHTML(item.description)}</div>`;
+        html += `<div class="slide-detail-desc">${escapeHTML(item.description)}</div>`;
       }
 
       const user = auth.currentUser;
       if (user && !user.isAnonymous) {
         html += `
-          <div class="dp-actions">
-            <button class="dp-join-btn" id="dp-join-btn">参加する</button>
-            <span class="dp-join-count" id="dp-join-count"></span>
+          <div class="slide-detail-actions">
+            <button class="slide-detail-join" data-event-id="${escapeHTML(item.id || '')}">参加する</button>
+            <span class="slide-detail-count"></span>
           </div>`;
       } else {
         html += `
-          <div class="dp-actions">
-            <span class="dp-join-count" id="dp-join-count"></span>
+          <div class="slide-detail-actions">
+            <span class="slide-detail-count"></span>
           </div>
-          <div class="dp-login-hint">Google ログインするとイベントに参加できます</div>`;
+          <div class="slide-detail-hint">Google ログインするとイベントに参加できます</div>`;
       }
     } else {
-      html += '<span class="dp-type t-book">BOOK</span>';
-      html += `<div class="dp-title">${escapeHTML(item.title)}</div>`;
-      if (item.author) html += `<div class="dp-meta">${escapeHTML(item.author)}</div>`;
-      if (item.genre) html += `<div class="dp-meta" style="color:var(--color-primary);">${escapeHTML(item.genre)}</div>`;
-      if (item.comment) html += `<div class="dp-desc">${escapeHTML(item.comment)}</div>`;
+      if (item.comment) {
+        html += `<div class="slide-detail-desc">${escapeHTML(item.comment)}</div>`;
+      }
     }
 
     return html;
   }
 
-  function renderDetailAt(index) {
-    if (!detailContent || carouselItems.length === 0) return;
+  function injectSlideDetails() {
+    carouselSlides.querySelectorAll('.carousel-slide').forEach((slide, i) => {
+      if (slide.querySelector('.slide-detail')) return;
+      const item = carouselItems[i];
+      if (!item) return;
+      const div = document.createElement('div');
+      div.className = 'slide-detail';
+      div.innerHTML = buildSlideDetail(item);
+      slide.querySelector('.carousel-slide-body').appendChild(div);
+    });
+  }
 
-    // Clean up previous listener
+  function cleanupParticipantListener() {
     if (dpParticipantUnsub) {
       dpParticipantUnsub();
       dpParticipantUnsub = null;
     }
+  }
 
-    dpIndex = ((index % carouselItems.length) + carouselItems.length) % carouselItems.length;
-    const item = carouselItems[dpIndex];
+  function attachParticipantLogic() {
+    cleanupParticipantListener();
 
-    detailContent.innerHTML = buildDetailHTML(item);
-    detailContent.scrollTop = 0;
+    const activeSlide = carouselSlides.querySelector('.carousel-slide.active');
+    if (!activeSlide) return;
 
-    // Update dots
-    if (detailDots) {
-      detailDots.querySelectorAll('.detail-popup-dot').forEach((d, i) => {
-        d.classList.toggle('active', i === dpIndex);
-      });
-    }
+    const idx = parseInt(activeSlide.dataset.index, 10);
+    const item = carouselItems[idx];
+    if (!item || item.type !== 'event' || !item.id) return;
 
-    // Event participation
-    if (item.type === 'event' && item.id) {
-      const joinBtn = document.getElementById('dp-join-btn');
-      const joinCount = document.getElementById('dp-join-count');
+    const joinBtn = activeSlide.querySelector('.slide-detail-join');
+    const countEl = activeSlide.querySelector('.slide-detail-count');
 
-      const ref = db.ref(`event_participants/${item.id}`);
-      const onValue = (snapshot) => {
-        const count = snapshot.numChildren();
-        const u = auth.currentUser;
-        const isJoined = u ? snapshot.hasChild(u.uid) : false;
-        if (joinBtn) {
-          joinBtn.textContent = isJoined ? '参加済み' : '参加する';
-          joinBtn.classList.toggle('joined', isJoined);
-        }
-        if (joinCount) {
-          joinCount.textContent = count > 0 ? `${count}人が参加予定` : '';
-        }
-      };
-
-      ref.on('value', onValue);
-      dpParticipantUnsub = () => ref.off('value', onValue);
-
+    const ref = db.ref(`event_participants/${item.id}`);
+    const onValue = (snapshot) => {
+      const count = snapshot.numChildren();
+      const u = auth.currentUser;
+      const isJoined = u ? snapshot.hasChild(u.uid) : false;
       if (joinBtn) {
-        joinBtn.addEventListener('click', async () => {
-          const u = auth.currentUser;
-          if (!u || u.isAnonymous) return;
-          joinBtn.disabled = true;
-          try {
-            if (joinBtn.classList.contains('joined')) {
-              await leaveEvent(item.id);
-            } else {
-              await joinEvent(item.id);
-            }
-          } catch (e) {
-            console.error('Detail join error:', e);
-          }
-          joinBtn.disabled = false;
-        });
+        joinBtn.textContent = isJoined ? '参加済み' : '参加する';
+        joinBtn.classList.toggle('joined', isJoined);
       }
+      if (countEl) {
+        countEl.textContent = count > 0 ? `${count}人が参加予定` : '';
+      }
+    };
+    ref.on('value', onValue);
+    dpParticipantUnsub = () => ref.off('value', onValue);
+
+    if (joinBtn) {
+      joinBtn.addEventListener('click', async () => {
+        const u = auth.currentUser;
+        if (!u || u.isAnonymous) return;
+        joinBtn.disabled = true;
+        try {
+          if (joinBtn.classList.contains('joined')) {
+            await leaveEvent(item.id);
+          } else {
+            await joinEvent(item.id);
+          }
+        } catch (e) {
+          console.error('Join error:', e);
+        }
+        joinBtn.disabled = false;
+      });
     }
   }
 
-  function openDetailModal(item) {
-    if (!detailOverlay || !detailPopup || carouselItems.length === 0) return;
+  function expandInfoArea() {
+    if (detailExpanded) return;
+    detailExpanded = true;
 
-    // Find index of tapped item
-    dpIndex = carouselItems.indexOf(item);
-    if (dpIndex < 0) dpIndex = 0;
-
-    // Pause carousel auto-rotation
     if (carouselTimer) clearInterval(carouselTimer);
 
-    // Build dots
-    if (detailDots) {
-      detailDots.innerHTML = carouselItems.map((_, i) =>
-        `<button class="detail-popup-dot${i === dpIndex ? ' active' : ''}" data-i="${i}"></button>`
-      ).join('');
+    injectSlideDetails();
+    infoArea.classList.add('expanded');
 
-      detailDots.querySelectorAll('.detail-popup-dot').forEach(dot => {
-        dot.addEventListener('click', () => {
-          renderDetailAt(parseInt(dot.dataset.i, 10));
-        });
-      });
-    }
+    attachParticipantLogic();
 
-    renderDetailAt(dpIndex);
-
-    // Show popup
-    detailOverlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
+    onSlideChanged = () => {
+      if (detailExpanded) attachParticipantLogic();
+    };
   }
 
-  function closeDetailPopup() {
-    if (!detailOverlay) return;
+  function collapseInfoArea() {
+    if (!detailExpanded) return;
+    detailExpanded = false;
 
-    detailOverlay.classList.remove('active');
-    document.body.style.overflow = '';
-
-    if (dpParticipantUnsub) {
-      dpParticipantUnsub();
-      dpParticipantUnsub = null;
-    }
+    infoArea.classList.remove('expanded');
+    cleanupParticipantListener();
+    onSlideChanged = null;
 
     resetCarouselTimer();
   }
 
-  // Close button
-  if (detailCloseBtn) {
-    detailCloseBtn.addEventListener('click', closeDetailPopup);
+  function openDetailModal(item) {
+    expandInfoArea();
   }
 
-  // Overlay click to close
-  if (detailOverlay) {
-    detailOverlay.addEventListener('click', (e) => {
-      if (e.target === detailOverlay) closeDetailPopup();
-    });
+  if (infoCloseBtn) {
+    infoCloseBtn.addEventListener('click', collapseInfoArea);
   }
-
-  // Swipe inside popup to navigate items (manual only)
-  (function setupDetailSwipe() {
-    if (!detailPopup) return;
-
-    let sx = 0, sy = 0, tracking = false;
-
-    detailPopup.addEventListener('touchstart', (e) => {
-      if (e.touches.length !== 1) return;
-      sx = e.touches[0].clientX;
-      sy = e.touches[0].clientY;
-      tracking = true;
-    }, { passive: true });
-
-    detailPopup.addEventListener('touchend', (e) => {
-      if (!tracking) return;
-      tracking = false;
-
-      const dx = e.changedTouches[0].clientX - sx;
-      const dy = e.changedTouches[0].clientY - sy;
-
-      if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
-
-      if (dx < 0) {
-        renderDetailAt(dpIndex + 1);
-      } else {
-        renderDetailAt(dpIndex - 1);
-      }
-    }, { passive: true });
-  })();
 
   // Wi-Fi FAB click
   if (wifiFab) {

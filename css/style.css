@@ -1021,60 +1021,23 @@ button, input, textarea, select, a {
   padding: 1.5rem 2rem;
   overflow: hidden;
   position: relative;
+  z-index: 20;
+  transition: height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.screen-info-area.expanded {
+  height: 80vh;
+  z-index: 100;
+  align-items: stretch;
 }
 
 .screen-info-area.hidden {
   display: none;
 }
 
-/* ============================================================
-   Detail Popup (floating card)
-   ============================================================ */
-.detail-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0);
-  z-index: 3000;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 8vh;
-  pointer-events: none;
-  transition: background 0.35s ease;
-}
-
-.detail-overlay.active {
-  background: rgba(0, 0, 0, 0.6);
-  pointer-events: auto;
-}
-
-.detail-popup {
-  width: calc(100% - 2rem);
-  max-width: 440px;
-  max-height: 78vh;
-  background: rgba(22, 22, 32, 0.96);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-radius: 16px;
-  box-shadow: 0 16px 56px rgba(0,0,0,0.45);
-  color: #FFF;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-  transform: scaleY(0);
-  transform-origin: top center;
-  opacity: 0;
-  transition: transform 0.38s cubic-bezier(0.34, 1.2, 0.64, 1),
-              opacity 0.25s ease;
-}
-
-.detail-overlay.active .detail-popup {
-  transform: scaleY(1);
-  opacity: 1;
-}
-
-.detail-popup-close {
+/* Close button for expanded info area */
+.info-close-btn {
+  display: none;
   position: absolute;
   top: 0.6rem;
   right: 0.6rem;
@@ -1082,116 +1045,86 @@ button, input, textarea, select, a {
   height: 32px;
   border-radius: 50%;
   border: none;
-  background: rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.65);
-  display: flex;
+  background: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7);
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 10;
+  z-index: 15;
   transition: all 0.2s;
 }
 
-.detail-popup-close:hover {
-  background: rgba(255,255,255,0.2);
+.info-close-btn:hover {
+  background: rgba(255,255,255,0.25);
   color: #FFF;
 }
 
-.detail-popup-content {
+.screen-info-area.expanded .info-close-btn {
+  display: flex;
+}
+
+/* Slide detail section (hidden in normal mode) */
+.slide-detail {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+}
+
+.screen-info-area.expanded .slide-detail {
+  max-height: 600px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 0.75rem;
+}
+
+.screen-info-area.expanded .carousel-slide-desc {
+  max-height: none;
+  overflow: visible;
+}
+
+.screen-info-area.expanded .carousel-slide-event {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.screen-info-area.expanded .carousel-slide.active {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.screen-info-area.expanded .carousel-slide.active .carousel-slide-event {
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 1.15rem;
-  padding-top: 0.85rem;
 }
 
-.detail-popup-dots {
-  display: flex;
-  justify-content: center;
-  gap: 0.4rem;
-  padding: 0.6rem 0 0.8rem;
-  flex-shrink: 0;
+.screen-info-area.expanded .carousel-slides {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
 }
 
-.detail-popup-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.2);
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  transition: all 0.25s;
-}
-
-.detail-popup-dot.active {
-  background: #FFF;
-  transform: scale(1.35);
-}
-
-/* Detail popup content elements */
-.dp-img {
-  width: 100%;
-  max-height: 200px;
-  object-fit: cover;
-  border-radius: 10px;
-  margin-bottom: 0.85rem;
-}
-
-.dp-type {
-  display: inline-block;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  margin-bottom: 0.45rem;
-  color: #FFF;
-}
-
-.dp-type.t-event { background: var(--color-primary); }
-.dp-type.t-today { background: #FF6B6B; }
-.dp-type.t-book  { background: #27AE60; }
-
-.dp-date {
-  font-size: 0.78rem;
-  color: rgba(255,255,255,0.5);
-  margin-bottom: 0.25rem;
-}
-
-.dp-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  line-height: 1.4;
-  color: #FFF;
-  margin-bottom: 0.6rem;
-}
-
-.dp-meta {
-  font-size: 0.8rem;
-  color: rgba(255,255,255,0.5);
-  margin-bottom: 0.3rem;
-}
-
-.dp-desc {
-  font-size: 0.85rem;
-  line-height: 1.65;
-  color: rgba(255,255,255,0.72);
-  margin-bottom: 1rem;
+/* Slide detail content */
+.slide-detail-desc {
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.75);
   white-space: pre-line;
+  margin-bottom: 0.75rem;
 }
 
-.dp-actions {
+.slide-detail-actions {
   display: flex;
   gap: 0.5rem;
   align-items: center;
   margin-top: 0.5rem;
 }
 
-.dp-join-btn {
+.slide-detail-join {
   flex: 1;
-  padding: 0.7rem 1rem;
+  padding: 0.65rem 1rem;
   border: none;
   border-radius: 10px;
   font-size: 0.85rem;
@@ -1203,25 +1136,25 @@ button, input, textarea, select, a {
   color: #FFF;
 }
 
-.dp-join-btn:hover { background: var(--color-primary-dark); }
+.slide-detail-join:hover { background: var(--color-primary-dark); }
 
-.dp-join-btn.joined {
+.slide-detail-join.joined {
   background: rgba(255,255,255,0.08);
   border: 1px solid rgba(255,255,255,0.2);
   color: rgba(255,255,255,0.7);
 }
 
-.dp-join-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.slide-detail-join:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.dp-join-count {
+.slide-detail-count {
   font-size: 0.75rem;
   color: rgba(255,255,255,0.4);
   flex-shrink: 0;
 }
 
-.dp-login-hint {
-  font-size: 0.78rem;
-  color: rgba(255,255,255,0.38);
+.slide-detail-hint {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.35);
   text-align: center;
   padding: 0.4rem 0;
 }
@@ -1230,6 +1163,13 @@ button, input, textarea, select, a {
   width: 100%;
   max-width: 900px;
   position: relative;
+  transition: all 0.4s ease;
+}
+
+.screen-info-area.expanded .carousel-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .carousel-slides {
@@ -1969,6 +1909,10 @@ button, input, textarea, select, a {
   .screen-info-area {
     height: 33vh;
     padding: 1rem;
+  }
+
+  .screen-info-area.expanded {
+    height: 85vh;
   }
 
   .screen-walk-area.fullscreen {
